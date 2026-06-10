@@ -61,12 +61,11 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#faf8f5] flex">
       {/* Sidebar */}
       <aside className="w-64 bg-white text-[#422a15] flex flex-col min-h-screen fixed top-0 left-0">
-        <div className="p-6 border-b border-[#5a3a20]">
+        <div className="p-6 ">
           <div className="flex items-center gap-2">
-            <Scissors className="w-5 h-5 text-[#422a15]" />
-            <span className="font-bold text-lg tracking-wide">StyledKraft</span>
+                      <span className="font-bold text-lg tracking-wide">StyledKraft</span>
           </div>
-          <p className="text-xs text-[#422a15] mt-1">Designer Studio</p>
+        
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -97,10 +96,10 @@ export default function DashboardPage() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-[#5a3a20]">
+        <div className="p-4 ">
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-amber-100 hover:bg-[#5a3a20] transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#5a3a20] hover:bg-[#5a3a20] hover:text-white transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Log out</span>
@@ -111,10 +110,10 @@ export default function DashboardPage() {
       {/* Main content */}
       <main className="flex-1 ml-64">
         {/* Top bar */}
-        <header className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <header className="bg-white border-b border-gray-100 shadow px-8 py-4 flex items-center justify-between sticky top-0 z-10">
           <div>
             <h1 className="text-xl font-bold text-[#422a15]">
-              Welcome back, {firstName} 👋
+              Welcome back, {firstName} 
             </h1>
             <p className="text-sm text-gray-500">Here's what's happening with your profile today.</p>
           </div>
