@@ -1,23 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import {
-  Eye,
-  Star,
-  MessageSquare,
-  Calendar,
-  LogOut,
-  Bell,
-  Settings,
-  PlusCircle,
-  Edit3,
-  MapPin,
-  CheckCircle,
-  Clock,
-  TrendingUp,
-  Scissors,
-  ChevronRight,
-  User,
+  Eye, Star, MessageSquare, Calendar, LogOut, Bell,
+  Settings, PlusCircle, Edit3, MapPin, CheckCircle,
+  Clock, TrendingUp, Scissors, ChevronRight, User, Menu, X,
 } from 'lucide-react'
 
 const stats = [
@@ -52,37 +40,61 @@ const statusColors: Record<string, string> = {
   Booked: 'bg-green-100 text-green-700',
 }
 
+const navItems = [
+  { icon: TrendingUp, label: 'Dashboard', active: true },
+  { icon: User, label: 'My Profile' },
+  { icon: MessageSquare, label: 'Inquiries', badge: 3 },
+  { icon: Calendar, label: 'Bookings' },
+  { icon: Star, label: 'Reviews' },
+  { icon: Settings, label: 'Settings' },
+]
+
 export default function DashboardPage() {
   const { user, logout } = useAuth()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const firstName = user?.email.split('@')[0] ?? 'Designer'
 
   return (
     <div className="min-h-screen bg-[#faf8f5] flex">
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white text-[#422a15] flex flex-col min-h-screen fixed top-0 left-0">
-        <div className="p-6 ">
+      <aside
+        className={`fixed top-0 left-0 z-40 h-screen w-64 bg-white flex flex-col
+          transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0`}
+      >
+        <div className="p-6 flex items-center justify-between border-b border-gray-100">
           <div className="flex items-center gap-2">
-                      <span className="font-bold text-lg tracking-wide">StyledKraft</span>
+            <Scissors className="w-5 h-5 text-amber-600" />
+            <span className="font-bold text-lg tracking-wide text-[#422a15]">StyledKraft</span>
           </div>
-        
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-1 rounded-lg hover:bg-gray-100 text-gray-500"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          {[
-            { icon: TrendingUp, label: 'Dashboard', active: true },
-            { icon: User, label: 'My Profile' },
-            { icon: MessageSquare, label: 'Inquiries', badge: 3 },
-            { icon: Calendar, label: 'Bookings' },
-            { icon: Star, label: 'Reviews' },
-            { icon: Settings, label: 'Settings' },
-          ].map(({ icon: Icon, label, active, badge }) => (
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {navItems.map(({ icon: Icon, label, active, badge }) => (
             <button
               key={label}
+              onClick={() => setSidebarOpen(false)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 active
-                  ? 'bg-[# shadow text-[#422a15] font-semibold'
-                  : 'text-[#422a15] hover:bg-[#5a3a20 hover:shadow cursor-pointer'
+                  ? 'bg-amber-500 text-white font-semibold'
+                  : 'text-[#422a15] hover:bg-amber-50'
               }`}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
@@ -96,10 +108,10 @@ export default function DashboardPage() {
           ))}
         </nav>
 
-        <div className="p-4 ">
+        <div className="p-4 border-t border-gray-100">
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#5a3a20] hover:bg-[#5a3a20] hover:text-white transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#422a15] hover:bg-red-50 hover:text-red-600 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Log out</span>
@@ -108,16 +120,27 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 ml-64">
+      <main className="flex-1 lg:ml-64 min-w-0">
+
         {/* Top bar */}
-        <header className="bg-white border-b border-gray-100 shadow px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-          <div>
-            <h1 className="text-xl font-bold text-[#422a15]">
-              Welcome back, {firstName} 
-            </h1>
-            <p className="text-sm text-gray-500">Here's what's happening with your profile today.</p>
+        <header className="bg-white border-b border-gray-100 shadow-sm px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex-shrink-0"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold text-[#422a15] truncate">
+                Welcome back, {firstName} 👋
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">
+                Here&apos;s what&apos;s happening with your profile today.
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <button className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
               <Bell className="w-5 h-5 text-gray-600" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
@@ -128,21 +151,19 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <div className="p-8 space-y-8">
-          {/* Availability banner */}
-         
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
 
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             {stats.map(({ label, value, icon: Icon, change, up }) => (
-              <div key={label} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+              <div key={label} className="bg-white rounded-xl border border-gray-100 p-4 sm:p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-500">{label}</span>
-                  <div className="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center">
+                  <span className="text-xs sm:text-sm text-gray-500 leading-tight">{label}</span>
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Icon className="w-4 h-4 text-amber-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-[#422a15]">{value}</p>
+                <p className="text-xl sm:text-2xl font-bold text-[#422a15]">{value}</p>
                 <p className={`text-xs mt-1 font-medium ${up ? 'text-green-600' : 'text-red-500'}`}>
                   {change} this week
                 </p>
@@ -150,10 +171,12 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-3 gap-6">
+          {/* Inquiries + Profile strength */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
             {/* Recent inquiries */}
-            <div className="col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
                 <h2 className="font-semibold text-[#422a15]">Recent Inquiries</h2>
                 <button className="text-xs text-amber-600 font-medium flex items-center gap-1 hover:text-amber-700">
                   View all <ChevronRight className="w-3.5 h-3.5" />
@@ -161,7 +184,7 @@ export default function DashboardPage() {
               </div>
               <div className="divide-y divide-gray-50">
                 {recentInquiries.map(({ client, service, date, status }) => (
-                  <div key={client} className="flex items-center gap-4 px-6 py-4">
+                  <div key={client} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4">
                     <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-[#422a15] font-bold text-sm flex-shrink-0">
                       {client[0]}
                     </div>
@@ -169,9 +192,9 @@ export default function DashboardPage() {
                       <p className="text-sm font-semibold text-gray-800 truncate">{client}</p>
                       <p className="text-xs text-gray-500 truncate">{service}</p>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-3 flex-shrink-0">
                       <span className="text-xs text-gray-400">{date}</span>
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[status]}`}>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColors[status]}`}>
                         {status}
                       </span>
                     </div>
@@ -180,13 +203,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Profile completion */}
+            {/* Profile strength */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-              <div className="px-6 py-4 border-b border-gray-100">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
                 <h2 className="font-semibold text-[#422a15]">Profile Strength</h2>
                 <p className="text-xs text-gray-500 mt-0.5">Complete your profile to attract more clients</p>
               </div>
-              <div className="px-6 py-4">
+              <div className="px-4 sm:px-6 py-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">{completionPct}% complete</span>
                   <span className="text-xs text-amber-600 font-semibold">
@@ -220,7 +243,7 @@ export default function DashboardPage() {
           {/* Quick actions */}
           <div>
             <h2 className="font-semibold text-[#422a15] mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {[
                 { icon: PlusCircle, label: 'Add Portfolio Piece', desc: 'Upload new work' },
                 { icon: Edit3, label: 'Edit Profile', desc: 'Update your info' },
@@ -229,17 +252,18 @@ export default function DashboardPage() {
               ].map(({ icon: Icon, label, desc }) => (
                 <button
                   key={label}
-                  className="bg-white border border-gray-100 rounded-xl p-5 text-left hover:border-amber-300 hover:shadow-md transition-all group"
+                  className="bg-white border border-gray-100 rounded-xl p-4 sm:p-5 text-left hover:border-amber-300 hover:shadow-md transition-all group"
                 >
-                  <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-amber-100 transition-colors">
-                    <Icon className="w-5 h-5 text-amber-600" />
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-amber-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-amber-100 transition-colors">
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                   </div>
-                  <p className="text-sm font-semibold text-[#422a15]">{label}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                  <p className="text-xs sm:text-sm font-semibold text-[#422a15]">{label}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">{desc}</p>
                 </button>
               ))}
             </div>
           </div>
+
         </div>
       </main>
     </div>

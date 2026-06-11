@@ -37,14 +37,14 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-[#faf8f5] flex flex-col">
       {/* Nav */}
-      <header className="px-10 py-5 flex items-center gap-2">
+      <header className="px-5 sm:px-10 py-5 flex items-center gap-2">
         <Scissors className="w-5 h-5 text-amber-600" />
         <span className="font-bold text-xl text-[#422a15]">StyledKraft</span>
       </header>
 
       {/* Card */}
       <section className="flex-1 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-md p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-md p-6 sm:p-8">
           <h1 className="text-2xl font-bold text-[#422a15] mb-1">Welcome back</h1>
           <p className="text-sm text-gray-500 mb-6">Sign in to your designer studio</p>
 
