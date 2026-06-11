@@ -39,10 +39,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   function login(email: string) {
-    const jwt = createJWT(email)
-    setAuthCookie(jwt)
-    setUser({ email })
-    router.push('/dashboard')
+    const jwt = createJWT(email) 
+    setAuthCookie(jwt) 
+    setUser({ email }) 
+    router.push('/dashboard') 
+
+    // create a jwt, write it to cookie, update user state , route to dashboard
   }
 
   function logout() {

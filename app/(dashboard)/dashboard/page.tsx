@@ -81,8 +81,8 @@ export default function DashboardPage() {
               key={label}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 active
-                  ? 'bg-amber-500 text-white font-semibold'
-                  : 'text-[#422a15] hover:bg-[#5a3a20]'
+                  ? 'bg-[# shadow text-[#422a15] font-semibold'
+                  : 'text-[#422a15] hover:bg-[#5a3a20 hover:shadow cursor-pointer'
               }`}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
