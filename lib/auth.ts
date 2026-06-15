@@ -1,5 +1,5 @@
 const TOKEN_COOKIE = 'auth-token'
-const EXPIRES_IN = 86400 
+const EXPIRES_IN = 86400 // expires in 24 hours time
 
 export function createJWT(email: string): string {
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))

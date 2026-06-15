@@ -18,7 +18,8 @@ interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null
   isLoading: boolean
-  login: (email: string) => void
+  // login:(token: string) => void
+  login: (email: string) => void // only needs email, mints its own JWT
   logout: () => void
 }
 
@@ -33,12 +34,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = getTokenFromCookie()
     if (token && isTokenValid(token)) {
       const payload = decodeJWT(token)
-      if (payload) setUser({ email: payload.email })
+      if (payload) setUser({ 
+        email: payload.email
+               })
     }
     setIsLoading(false)
   }, [])
 
-  function login(email: string) {
+  function login(email:string 
+    // token: string
+  )
+   {
+    // setAuthCookie(token)
+    // const payload= decodeJWT(token);
+    // if(payload) setUser({email: payload.email})
+    //   router.push('/dashboard')
     const jwt = createJWT(email) 
     setAuthCookie(jwt) 
     setUser({ email }) 

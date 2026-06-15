@@ -30,10 +30,38 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setServerError(null)
     // Simulate a short network delay for UX realism
-    await new Promise((r) => setTimeout(r, 600))
-    login(data.email)
-  }
+    // await new Promise((r) => setTimeout(r, 600))
+    // login(data.email);
 
+    try{
+      const res = await fetch('https://reqres.in/api/login',{
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email:data.email,
+          password:data.password,
+        })
+      })
+        const json = await res.json();
+     if (!res.ok) {
+      // reqres.in returns { error: "user not found" } or { error: "Missing password" }
+      setServerError(json.error ?? 'Login failed. Please try again.')
+      return
+    }
+    login(data.email)
+    // login(json.token)
+     if (!res.ok) {
+      // reqres.in returns { error: "user not found" } or { error: "Missing password" }
+      setServerError( json.error??'Network Error, check your internet connection. Please try again.')
+      return
+    
+    }
+  
+  }
+  catch {
+      setServerError('Network error.')
+    }
+  }
   return (
     <main className="min-h-screen bg-[#faf8f5] flex flex-col">
       {/* Nav */}

@@ -11,14 +11,13 @@ function isTokenValid(token: string): boolean {
   } catch {
     return false
   }
-}
+};
+
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get(TOKEN_COOKIE)?.value
-  const { pathname } = request.nextUrl
-
+  const { pathname } = request.nextUrl;
   const isAuthenticated = !!token && isTokenValid(token)
-
   if (pathname.startsWith('/dashboard') && !isAuthenticated) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
@@ -26,9 +25,17 @@ export function middleware(request: NextRequest) {
   if ((pathname === '/login' || pathname === '/signup') && isAuthenticated) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
+  return NextResponse.next()}
 
-  return NextResponse.next()
-}
+  
+function middlewares(request: NextRequest){
+    const token = request.cookies.get(TOKEN_COOKIE)?.value;
+    const { pathname } = request.nextUrl;
+    const isAuthenticated = !!token && isTokenValid(token);
+    if(pathname.startsWith('/dashboard') && !isAuthenticated)
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
 
 export const config = {
   matcher: ['/dashboard/:path*', '/login', '/signup'],

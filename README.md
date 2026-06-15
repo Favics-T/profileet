@@ -1,4 +1,4 @@
-# 🔐 Learning JWT Authentication
+#  Learning JWT Authentication
 
 > This project is a **learning exercise** 
 ---
