@@ -18,3 +18,11 @@ export interface Inquiry {
   status: InquiryStatus
   message: string
 }
+
+export type AdminRole = 'super_admin' | 'profile_manager' | 'support_agent' | 'auditor'
+
+export interface AdminUser {
+  email: string
+  role: AdminRole
+  name: string
+}
