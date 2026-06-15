@@ -74,7 +74,7 @@ const navItems = [
   : user?.email.split('@')[0] ?? 'Designer'
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] flex">
+    <div className="min-h-screen bg-[#ffffff] flex">
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -86,14 +86,14 @@ const navItems = [
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen w-64 bg-white flex flex-col
+        className={`fixed top-0 left-0 z-40 border-r border-amber-100 h-screen w-64 bg-white flex flex-col
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0`}
       >
-        <div className="p-6 flex items-center justify-between border-b border-gray-100">
+        <div className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Scissors className="w-5 h-5 text-amber-600" />
+            <Scissors className="w-5 h-5 text-[#FF6500]" />
             <span className="font-bold text-lg tracking-wide text-[#422a15]">StyledKraft</span>
           </div>
           <button
@@ -114,14 +114,14 @@ const navItems = [
                 setSidebarOpen(false)}}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 active
-                  ? 'bg-amber-500 text-white font-semibold'
+                  ? 'bg-[#FF6500] text-white font-semibold'
                   : 'text-[#422a15] hover:bg-amber-50'
               }`}
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
+              <Icon className="w-4 h-4 shrink-0" />
               <span className="flex-1 text-left">{label}</span>
               {badge && (
-                <span className="bg-amber-400 text-[#422a15] text-xs font-bold px-1.5 py-0.5 rounded-full">
+                <span className="bg-[#FF6500] text-[#422a15] text-xs font-bold px-1.5 py-0.5 rounded-full">
                   {badge}
                 </span>
               )}
@@ -164,7 +164,7 @@ const navItems = [
           <div className="flex items-center gap-2 sm:gap-4">
             <button type="button" className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
               <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-500" />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[#FF6500]" />
             </button>
             <button
               type="button"
@@ -185,7 +185,7 @@ const navItems = [
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs sm:text-sm text-gray-500 leading-tight">{label}</span>
                   <div className="w-8 h-8 sm:w-9 sm:h-9 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-amber-600" />
+                    <Icon className="w-4 h-4 text-[#FF6500]" />
                   </div>
                 </div>
                 <p className="text-xl sm:text-2xl font-bold text-[#422a15]">{value}</p>
@@ -206,13 +206,13 @@ const navItems = [
   <div className="px-4 sm:px-6 py-4">
     <div className="flex items-center justify-between mb-2">
       <span className="text-sm font-medium text-gray-700">{completionPct}% complete</span>
-      <span className="text-xs text-amber-600 font-semibold">
+      <span className="text-xs text-[#FF6500] font-semibold">
         {incompleteFields.length} remaining
       </span>
     </div>
     <div className="w-full bg-gray-100 rounded-full h-2 mb-5">
       <div
-        className="bg-amber-500 h-2 rounded-full transition-all"
+        className="bg-[#FF6500] h-2 rounded-full transition-all"
         style={{ width: `${completionPct}%` }}
       />
     </div>

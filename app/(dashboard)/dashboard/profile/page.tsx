@@ -52,7 +52,7 @@ export default function EditProfilePage() {
       {/* Nav */}
       <header className="px-5 sm:px-10 py-5 flex items-center justify-between border-b border-gray-100 bg-white sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <Scissors className="w-5 h-5 text-amber-600" />
+          <Scissors className="w-5 h-5 text-[#FF6500]" />
           <span className="font-bold text-xl text-[#422a15]">StyledKraft</span>
         </div>
         <button
@@ -74,7 +74,7 @@ export default function EditProfilePage() {
           </p>
           <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
             <div
-              className="bg-amber-500 h-2 rounded-full transition-all duration-500"
+              className="bg-[#FF6500] h-2 rounded-full transition-all duration-500"
               style={{ width: `${completionPct}%` }}
             />
           </div>
@@ -102,7 +102,7 @@ export default function EditProfilePage() {
               placeholder="e.g. Amara Okafor"
               {...register('fullName')}
               aria-invalid={errors.fullName ? 'true' : 'false'}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF6500] focus:ring-2 focus:ring-amber-100 transition-all"
             />
             {errors.fullName && (
               <p role="alert" className="text-xs text-red-500 mt-1">{errors.fullName.message}</p>
@@ -202,7 +202,7 @@ export default function EditProfilePage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-[#422a15] text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-[#5a3a20] disabled:opacity-60 transition-colors"
+            className="w-full bg-[#FF6500] text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-[#e25e06] disabled:opacity-60 transition-colors"
           >
             {isSubmitting ? 'Saving…' : 'Save Profile'}
           </button>
