@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const TOKEN_COOKIE = 'auth-token'
+const ADMIN_TOKEN_COOKIE = 'admin-auth-token'
 
 function isTokenValid(token: string): boolean {
   try {
@@ -11,23 +12,38 @@ function isTokenValid(token: string): boolean {
   } catch {
     return false
   }
-};
-
+}
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get(TOKEN_COOKIE)?.value
-  const { pathname } = request.nextUrl;
-  const isAuthenticated = !!token && isTokenValid(token)
-  if (pathname.startsWith('/dashboard') && !isAuthenticated) {
+  const { pathname } = request.nextUrl
+
+  // --- Designer auth ---
+  const designerToken = request.cookies.get(TOKEN_COOKIE)?.value
+  const isDesignerAuth = !!designerToken && isTokenValid(designerToken)
+
+  if (pathname.startsWith('/dashboard') && !isDesignerAuth) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if ((pathname === '/login' || pathname === '/signup') && isAuthenticated) {
+  if ((pathname === '/login' || pathname === '/signup') && isDesignerAuth) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
-  return NextResponse.next()}
+
+  // --- Admin auth ---
+  const adminToken = request.cookies.get(ADMIN_TOKEN_COOKIE)?.value
+  const isAdminAuth = !!adminToken && isTokenValid(adminToken)
+
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login' && !isAdminAuth) {
+    return NextResponse.redirect(new URL('/admin/login', request.url))
+  }
+
+  if (pathname === '/admin/login' && isAdminAuth) {
+    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+  }
+
+  return NextResponse.next()
+}
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/signup', '/profile'],
-  
+  matcher: ['/dashboard/:path*', '/login', '/signup', '/admin/:path*'],
 }
