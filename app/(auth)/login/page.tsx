@@ -36,7 +36,9 @@ export default function LoginPage() {
     try{
       const res = await fetch('https://reqres.in/api/login',{
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json',
+                  'x-api-key': process.env.NEXT_PUBLIC_REQRES_API_KEY ?? '',
+        },
         body: JSON.stringify({
           email:data.email,
           password:data.password,
@@ -50,13 +52,7 @@ export default function LoginPage() {
     }
     login(data.email)
     // login(json.token)
-     if (!res.ok) {
-      // reqres.in returns { error: "user not found" } or { error: "Missing password" }
-      setServerError( json.error??'Network Error, check your internet connection. Please try again.')
-      return
-    
-    }
-  
+      
   }
   catch {
       setServerError('Network error.')
