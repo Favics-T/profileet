@@ -7,6 +7,11 @@ import {
   Settings, PlusCircle, Edit3, MapPin, CheckCircle,
   Clock, TrendingUp, Scissors, ChevronRight, User, Menu, X,
 } from 'lucide-react'
+import { useRouter }  from 'next/navigation'
+import { useProfile } from '@/context/ProfileContext'
+
+
+
 
 const stats = [
   { label: 'Profile Views', value: '1,240', icon: Eye, change: '+12%', up: true },
@@ -22,17 +27,18 @@ const recentInquiries = [
   { client: 'Tola Bello', service: 'Kaftan for husband', date: 'Jun 7', status: 'Replied' },
 ]
 
-const profileSteps = [
-  { label: 'Basic info', done: true },
-  { label: 'Profile photo', done: true },
-  { label: 'Portfolio (min. 6 pieces)', done: true },
-  { label: 'Pricing & services', done: false },
-  { label: 'Location & availability', done: false },
-]
+// const profileSteps = [
+//   { label: 'Basic info', done: true },
+//   { label: 'Profile photo', done: true },
+//   { label: 'Portfolio (min. 6 pieces)', done: true },
+//   { label: 'Pricing & services', done: false },
+//   { label: 'Location & availability', done: false },
+// ]
 
-const completionPct = Math.round(
-  (profileSteps.filter((s) => s.done).length / profileSteps.length) * 100
-)
+
+// const completionPct = Math.round(
+//   (profileSteps.filter((s) => s.done).length / profileSteps.length) * 100
+// )
 
 const statusColors: Record<string, string> = {
   New: 'bg-amber-100 text-amber-700',
@@ -41,19 +47,24 @@ const statusColors: Record<string, string> = {
 }
 
 const navItems = [
-  { icon: TrendingUp, label: 'Dashboard', active: true },
-  { icon: User, label: 'My Profile' },
-  { icon: MessageSquare, label: 'Inquiries', badge: 3 },
-  { icon: Calendar, label: 'Bookings' },
-  { icon: Star, label: 'Reviews' },
-  { icon: Settings, label: 'Settings' },
+  { icon: TrendingUp, label: 'Dashboard', active: true, href: '/dashboard' },
+  { icon: User, label: 'My Profile', href: '/dashboard/profile' },
+  { icon: MessageSquare, label: 'Inquiries', badge: 3, href: '/dashboard/inquiries' },
+  { icon: Calendar, label: 'Bookings', href: '/dashboard/bookings' },
+  { icon: Star, label: 'Reviews', href: '/dashboard/reviews' },
+  { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
 ]
 
 export default function DashboardPage() {
   const { user, logout } = useAuth()
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { profile, completionPct, incompleteFields } = useProfile() 
+  // const firstName = user?.email.split('@')[0] ?? 'Designer'
 
-  const firstName = user?.email.split('@')[0] ?? 'Designer'
+  const displayName = profile.fullName
+  ? profile.fullName.split(' ')[0]
+  : user?.email.split('@')[0] ?? 'Designer'
 
   return (
     <div className="min-h-screen bg-[#faf8f5] flex">
@@ -87,10 +98,13 @@ export default function DashboardPage() {
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map(({ icon: Icon, label, active, badge }) => (
+          {navItems.map(({ icon: Icon, label, active, badge,href }) => (
             <button
               key={label}
-              onClick={() => setSidebarOpen(false)}
+              
+              onClick={() => { 
+                router.push(href)
+                setSidebarOpen(false)}}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 active
                   ? 'bg-amber-500 text-white font-semibold'
@@ -133,7 +147,7 @@ export default function DashboardPage() {
             </button>
             <div className="min-w-0">
               <h1 className="text-base sm:text-xl font-bold text-[#422a15] truncate">
-                Welcome back, {firstName} 👋
+                Welcome back, {displayName} 👋
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">
                 Here&apos;s what&apos;s happening with your profile today.
@@ -146,7 +160,7 @@ export default function DashboardPage() {
               <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
             </button>
             <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-[#422a15] font-bold text-sm">
-              {firstName[0].toUpperCase()}
+              {displayName[0].toUpperCase()}
             </div>
           </div>
         </header>
@@ -172,86 +186,55 @@ export default function DashboardPage() {
           </div>
 
           {/* Inquiries + Profile strength */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            {/* Recent inquiries */}
-            <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-[#422a15]">Recent Inquiries</h2>
-                <button className="text-xs text-amber-600 font-medium flex items-center gap-1 hover:text-amber-700">
-                  View all <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="divide-y divide-gray-50">
-                {recentInquiries.map(({ client, service, date, status }) => (
-                  <div key={client} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4">
-                    <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-[#422a15] font-bold text-sm flex-shrink-0">
-                      {client[0]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{client}</p>
-                      <p className="text-xs text-gray-500 truncate">{service}</p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-3 flex-shrink-0">
-                      <span className="text-xs text-gray-400">{date}</span>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColors[status]}`}>
-                        {status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Profile strength */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-              <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-[#422a15]">Profile Strength</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Complete your profile to attract more clients</p>
-              </div>
-              <div className="px-4 sm:px-6 py-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">{completionPct}% complete</span>
-                  <span className="text-xs text-amber-600 font-semibold">
-                    {profileSteps.filter((s) => !s.done).length} remaining
-                  </span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2 mb-5">
-                  <div
-                    className="bg-amber-500 h-2 rounded-full transition-all"
-                    style={{ width: `${completionPct}%` }}
-                  />
-                </div>
-                <ul className="space-y-3">
-                  {profileSteps.map(({ label, done }) => (
-                    <li key={label} className="flex items-center gap-3 text-sm">
-                      {done ? (
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      ) : (
-                        <Clock className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                      )}
-                      <span className={done ? 'text-gray-500 line-through' : 'text-gray-700 font-medium'}>
-                        {label}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
+          {/* Profile strength */}
+<div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+  <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
+    <h2 className="font-semibold text-[#422a15]">Profile Strength</h2>
+    <p className="text-xs text-gray-500 mt-0.5">Complete your profile to attract more clients</p>
+  </div>
+  <div className="px-4 sm:px-6 py-4">
+    <div className="flex items-center justify-between mb-2">
+      <span className="text-sm font-medium text-gray-700">{completionPct}% complete</span>
+      <span className="text-xs text-amber-600 font-semibold">
+        {incompleteFields.length} remaining
+      </span>
+    </div>
+    <div className="w-full bg-gray-100 rounded-full h-2 mb-5">
+      <div
+        className="bg-amber-500 h-2 rounded-full transition-all"
+        style={{ width: `${completionPct}%` }}
+      />
+    </div>
+    <ul className="space-y-3">
+      {incompleteFields.map((label) => (
+        <li key={label} className="flex items-center gap-3 text-sm">
+          <Clock className="w-4 h-4 text-gray-300 flex-shrink-0" />
+          <span className="text-gray-700 font-medium">{label}</span>
+        </li>
+      ))}
+    </ul>
+    {completionPct === 100 && (
+      <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
+        <CheckCircle className="w-4 h-4" />
+        <span>Profile complete!</span>
+      </div>
+    )}
+  </div>
+</div>
 
           {/* Quick actions */}
           <div>
             <h2 className="font-semibold text-[#422a15] mb-4">Quick Actions</h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {[
-                { icon: PlusCircle, label: 'Add Portfolio Piece', desc: 'Upload new work' },
-                { icon: Edit3, label: 'Edit Profile', desc: 'Update your info' },
-                { icon: MapPin, label: 'Set Location', desc: 'Add your city' },
-                { icon: TrendingUp, label: 'Boost Profile', desc: 'Get more visibility' },
-              ].map(({ icon: Icon, label, desc }) => (
+                { icon: PlusCircle, label: 'Add Portfolio Piece', desc: 'Upload new work', href: '/dashboard/portfolio/new' },
+  { icon: Edit3, label: 'Edit Profile', desc: 'Update your info', href: '/dashboard/profile' },
+  { icon: MapPin, label: 'Set Location', desc: 'Add your city', href: '/dashboard/profile?section=location' },
+  { icon: TrendingUp, label: 'Boost Profile', desc: 'Get more visibility', href: '/dashboard/boost' },
+              ].map(({ icon: Icon, label, desc,href }) => (
                 <button
                   key={label}
+                  onClick={() => router.push(href)}
                   className="bg-white border border-gray-100 rounded-xl p-4 sm:p-5 text-left hover:border-amber-300 hover:shadow-md transition-all group"
                 >
                   <div className="w-9 h-9 sm:w-10 sm:h-10 bg-amber-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-amber-100 transition-colors">
