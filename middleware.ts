@@ -27,16 +27,7 @@ export function middleware(request: NextRequest) {
   }
   return NextResponse.next()}
 
-  
-function middlewares(request: NextRequest){
-    const token = request.cookies.get(TOKEN_COOKIE)?.value;
-    const { pathname } = request.nextUrl;
-    const isAuthenticated = !!token && isTokenValid(token);
-    if(pathname.startsWith('/dashboard') && !isAuthenticated)
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/signup','/profile'],
+  matcher: ['/dashboard/:path*', '/login', '/signup', '/profile'],
+  
 }
