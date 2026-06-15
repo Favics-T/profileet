@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useRouter }  from 'next/navigation'
 import { useProfile } from '@/context/ProfileContext'
+import { useInquiry } from '@/context/InquiryContext'
 
 
 
@@ -46,20 +47,26 @@ const statusColors: Record<string, string> = {
   Booked: 'bg-green-100 text-green-700',
 }
 
-const navItems = [
-  { icon: TrendingUp, label: 'Dashboard', active: true, href: '/dashboard' },
-  { icon: User, label: 'My Profile', href: '/dashboard/profile' },
-  { icon: MessageSquare, label: 'Inquiries', badge: 3, href: '/dashboard/inquiries' },
-  { icon: Calendar, label: 'Bookings', href: '/dashboard/bookings' },
-  { icon: Star, label: 'Reviews', href: '/dashboard/reviews' },
-  { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
-]
+
 
 export default function DashboardPage() {
   const { user, logout } = useAuth()
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { profile, completionPct, incompleteFields } = useProfile() 
+
+  const { inquiries } = useInquiry()
+const newInquiriesCount = inquiries.filter((i) => i.status === 'New').length
+
+const navItems = [
+  { icon: TrendingUp, label: 'Dashboard', active: true, href: '/dashboard' },
+  { icon: User, label: 'My Profile', href: '/dashboard/profile' },
+  { icon: MessageSquare, label: 'Inquiries', badge: newInquiriesCount, href: '/dashboard/inquiries' },
+  { icon: Calendar, label: 'Bookings', href: '/dashboard/bookings' },
+  { icon: Star, label: 'Reviews', href: '/dashboard/reviews' },
+  { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+]
+
   // const firstName = user?.email.split('@')[0] ?? 'Designer'
 
   const displayName = profile.fullName
@@ -154,14 +161,18 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <button className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button type="button" className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
               <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-500" />
             </button>
-            <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-[#422a15] font-bold text-sm">
-              {displayName[0].toUpperCase()}
-            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard/profile/preview')}
+              className="hidden sm:inline-flex items-center gap-2 text-xs font-medium text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 rounded-full hover:bg-amber-100 transition-colors"
+            >
+              View Profile
+            </button>
           </div>
         </header>
 

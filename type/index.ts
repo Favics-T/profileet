@@ -7,3 +7,14 @@ export interface DesignerProfile {
   yearsOfExperience: number
   avatar: string | null
 }
+
+export type InquiryStatus = 'New' | 'Replied' | 'Booked'
+
+export interface Inquiry {
+  id: string
+  client: string
+  service: string
+  date: string
+  status: InquiryStatus
+  message: string
+}

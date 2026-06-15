@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { DesignerProfile } from '@/type/index'
 
 interface ProfileContextType {
@@ -20,7 +20,6 @@ const defaultProfile: DesignerProfile = {
   avatar: null,
 }
 
-// Fields that count toward profile strength
 const TRACKED_FIELDS: { key: keyof DesignerProfile; label: string }[] = [
   { key: 'fullName', label: 'Full name' },
   { key: 'avatar', label: 'Profile photo' },
@@ -30,6 +29,8 @@ const TRACKED_FIELDS: { key: keyof DesignerProfile; label: string }[] = [
   { key: 'phone', label: 'Phone number' },
   { key: 'yearsOfExperience', label: 'Years of experience' },
 ]
+
+const STORAGE_KEY = 'styledkraft_designer_profile'
 
 function getCompletionData(profile: DesignerProfile) {
   const incomplete = TRACKED_FIELDS.filter(({ key }) => {
@@ -47,10 +48,37 @@ function getCompletionData(profile: DesignerProfile) {
   }
 }
 
+function loadProfile(): DesignerProfile {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) return { ...defaultProfile, ...JSON.parse(stored) }
+  } catch {
+    // localStorage unavailable or corrupted
+  }
+  return defaultProfile
+}
+
 const ProfileContext = createContext<ProfileContextType | null>(null)
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<DesignerProfile>(defaultProfile)
+  const [hydrated, setHydrated] = useState(false)
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    setProfile(loadProfile())
+    setHydrated(true)
+  }, [])
+
+  // Save to localStorage whenever profile changes
+  useEffect(() => {
+    if (!hydrated) return
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
+    } catch {
+      // localStorage unavailable
+    }
+  }, [profile, hydrated])
 
   function updateProfile(data: Partial<DesignerProfile>) {
     setProfile((prev) => ({ ...prev, ...data }))

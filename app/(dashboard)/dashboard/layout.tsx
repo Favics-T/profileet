@@ -1,4 +1,5 @@
 import { ProfileProvider } from '@/context/ProfileContext'
+import { InquiryProvider } from '@/context/InquiryContext'
 
 export default function DashboardLayout({
   children,
@@ -7,7 +8,9 @@ export default function DashboardLayout({
 }) {
   return (
     <ProfileProvider>
-      {children}
+      <InquiryProvider>
+        {children}
+      </InquiryProvider>
     </ProfileProvider>
   )
 }
