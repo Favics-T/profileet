@@ -141,7 +141,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex-shrink-0"
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600 shrink-0"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -154,7 +154,7 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <button className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
               <Bell className="w-5 h-5 text-gray-600" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
@@ -173,7 +173,7 @@ export default function DashboardPage() {
               <div key={label} className="bg-white rounded-xl border border-gray-100 p-4 sm:p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs sm:text-sm text-gray-500 leading-tight">{label}</span>
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
                     <Icon className="w-4 h-4 text-amber-600" />
                   </div>
                 </div>
@@ -208,7 +208,7 @@ export default function DashboardPage() {
     <ul className="space-y-3">
       {incompleteFields.map((label) => (
         <li key={label} className="flex items-center gap-3 text-sm">
-          <Clock className="w-4 h-4 text-gray-300 flex-shrink-0" />
+          <Clock className="w-4 h-4 text-gray-300 shrink-0" />
           <span className="text-gray-700 font-medium">{label}</span>
         </li>
       ))}
