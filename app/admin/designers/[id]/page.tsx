@@ -175,7 +175,7 @@ export default function DesignerDetailPage({
 
   if (!designer) {
     return (
-      <main className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+      <main className="min-h-screen bg-[0f172a] flex items-center justify-center">
         <div className="text-center">
           <p className="text-white font-semibold text-lg mb-2">Designer not found</p>
           <button
@@ -213,13 +213,13 @@ export default function DesignerDetailPage({
   }
 
   return (
-    <main className="min-h-screen bg-[#0f172a]">
+    <main className="min-h-screen bg-[0f172a] text-gray-600">
 
       {/* Nav */}
-      <header className="px-5 sm:px-10 py-5 flex items-center justify-between border-b border-white/10 bg-[#1e293b] sticky top-0 z-10">
+      <header className="px-5 shadow sm:px-10 py-5 flex items-center justify-between border-b border-white/10 bg-[1e293b] sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <Scissors className="w-5 h-5 text-amber-500" />
-          <span className="font-bold text-white">StyledKraft</span>
+          <span className="font-bold tet-white">StyledKraft</span>
           <span className="text-xs font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
             Admin
           </span>
@@ -236,14 +236,14 @@ export default function DesignerDetailPage({
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
 
         {/* Hero card */}
-        <div className="bg-[#1e293b] rounded-2xl border border-white/10 p-6">
+        <div className="bg-[1e293b] shadow rounded-2xl border border-white/10 p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl bg-amber-500/20 flex items-center justify-center text-2xl font-bold text-amber-400">
                 {designer.name[0]}
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white mb-1">{designer.name}</h1>
+                <h1 className="text-xl font-bold text-whie mb-1">{designer.name}</h1>
                 <p className="text-sm text-slate-400 mb-2">{designer.email}</p>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[designer.status]}`}>
                   {designer.status}
@@ -294,13 +294,13 @@ export default function DesignerDetailPage({
         </div>
 
         {/* Profile details */}
-        <div className="bg-[#1e293b] rounded-2xl border border-white/10 p-6">
+        <div className="bg-[1e293b] rounded-2xl border border-white/10 p-6 shadow">
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
             Profile Details
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center shrink-0">
                 <Briefcase className="w-4 h-4 text-amber-500" />
               </div>
               <div>
@@ -309,7 +309,7 @@ export default function DesignerDetailPage({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center shrink-0">
                 <MapPin className="w-4 h-4 text-amber-500" />
               </div>
               <div>
@@ -318,7 +318,7 @@ export default function DesignerDetailPage({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center shrink-0">
                 <Phone className="w-4 h-4 text-amber-500" />
               </div>
               <div>
@@ -327,7 +327,7 @@ export default function DesignerDetailPage({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center shrink-0">
                 <Calendar className="w-4 h-4 text-amber-500" />
               </div>
               <div>
@@ -338,14 +338,14 @@ export default function DesignerDetailPage({
           </div>
 
           {/* Bio */}
-          <div className="bg-[#0f172a] rounded-xl px-4 py-3">
-            <p className="text-xs text-slate-500 mb-1">Bio</p>
-            <p className="text-sm text-slate-300 leading-relaxed">{designer.bio}</p>
+          <div className="bg-[0f172a] shadow rounded-xl px-4 py-3">
+            <p className="text-xs text-slate-800 mb-1">Bio</p>
+            <p className="text-sm text-slate-800 leading-relaxed">{designer.bio}</p>
           </div>
         </div>
 
         {/* Activity */}
-        <div className="bg-[#1e293b] rounded-2xl border border-white/10 p-6">
+        <div className="bg-[1e293b] shadow rounded-2xl border border-white/10 p-6">
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
             Activity
           </h2>
@@ -368,7 +368,7 @@ export default function DesignerDetailPage({
         </div>
 
         {/* Internal notes */}
-        <div className="bg-[#1e293b] rounded-2xl border border-white/10 p-6">
+        <div className="bg-[1e293b] shadow rounded-2xl border border-white/10 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
               Internal Notes
@@ -404,7 +404,7 @@ export default function DesignerDetailPage({
             <div className="space-y-3">
               {noteSaved && (
                 <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-2.5">
-                  <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                  <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
                   <p className="text-xs text-green-400 font-medium">Note added successfully</p>
                 </div>
               )}

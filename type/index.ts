@@ -26,3 +26,32 @@ export interface AdminUser {
   role: AdminRole
   name: string
 }
+
+export interface DesignerNote {
+  id: string
+  author: string
+  role: AdminRole
+  content: string
+  createdAt: string
+}
+
+export interface MockDesigner {
+  id: string
+  name: string
+  email: string
+  specialty: string
+  location: string
+  status: 'Pending' | 'Verified' | 'Active' | 'Suspended' | 'Rejected'
+  joined: string
+  bio: string
+  phone: string
+  yearsOfExperience: number
+  inquiries: number
+  bookings: number
+  notes: DesignerNote[]
+}
+
+export type User = {
+  email: string
+  role: 'designer' | 'client'
+}

@@ -9,17 +9,19 @@ import {
   setAuthCookie,
   removeAuthCookie,
   getTokenFromCookie,
+  TOKEN_COOKIE,
+  CLIENT_AUTH_TOKEN,
 } from '@/lib/auth'
 
 interface AuthUser {
   email: string
+  role: 'designer' | 'client'
 }
 
 interface AuthContextType {
   user: AuthUser | null
   isLoading: boolean
-  // login:(token: string) => void
-  login: (email: string) => void // only needs email, mints its own JWT
+  login: (email: string, role: 'designer' | 'client') => void
   logout: () => void
 }
 
@@ -30,35 +32,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
+  // On mount — restore session from whichever cookie exists
   useEffect(() => {
-    const token = getTokenFromCookie()
-    if (token && isTokenValid(token)) {
-      const payload = decodeJWT(token)
-      if (payload) setUser({ 
-        email: payload.email
-               })
+    const designerToken = getTokenFromCookie(TOKEN_COOKIE)
+    const clientToken   = getTokenFromCookie(CLIENT_AUTH_TOKEN)
+
+    if (designerToken && isTokenValid(designerToken)) {
+      const payload = decodeJWT(designerToken)
+      if (payload) setUser({ email: payload.email, role: 'designer' })
+    } else if (clientToken && isTokenValid(clientToken)) {
+      const payload = decodeJWT(clientToken)
+      if (payload) setUser({ email: payload.email, role: 'client' })
     }
+
     setIsLoading(false)
   }, [])
 
-  function login(email:string 
-    // token: string
-  )
-   {
-    // setAuthCookie(token)
-    // const payload= decodeJWT(token);
-    // if(payload) setUser({email: payload.email})
-    //   router.push('/dashboard')
-    const jwt = createJWT(email) 
-    setAuthCookie(jwt) 
-    setUser({ email }) 
-    router.push('/dashboard') 
+  function login(email: string, role: 'designer' | 'client') {
+    const jwt = createJWT(email, role)
+    setAuthCookie(jwt, role)         // writes to correct cookie per role
+    setUser({ email, role })
 
-    // create a jwt, write it to cookie, update user state , route to dashboard
+    if (role === 'client') {
+      router.push('/client/dashboard')
+    } else {
+      router.push('/dashboard')
+    }
   }
 
   function logout() {
-    removeAuthCookie()
+    removeAuthCookie()   // clears both auth-token and client-auth-token
     setUser(null)
     router.push('/login')
   }

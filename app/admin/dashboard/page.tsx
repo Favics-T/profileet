@@ -88,7 +88,7 @@ export default function AdminDashboardPage() {
   const statusFilters: (DesignerStatus | 'All')[] = ['All', 'Pending', 'Verified', 'Active', 'Suspended', 'Rejected']
 
   return (
-    <div className="min-h-screen bg-[#0f172a] flex">
+    <div className="min-h-screen  flex">
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -99,35 +99,37 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 z-40 h-screen w-64 bg-[#1e293b] border-r border-white/10 flex flex-col
+      <aside className={`fixed top-0 left-0 z-40 h-screen w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
         {/* Logo */}
-        <div className="p-6 flex items-center justify-between border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <Scissors className="w-5 h-5 text-amber-500" />
-            <span className="font-bold text-white">StyledKraft</span>
-            <span className="text-xs font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+        <div className="px-5 py-5 flex items-center justify-between border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center shrink-0">
+              <Scissors className="w-4 h-4 text-amber-500" />
+            </div>
+            <span className="font-bold text-slate-800 text-sm">StyledKraft</span>
+            <span className="text-xs font-semibold text-amber-600 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
               Admin
             </span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded-lg hover:bg-white/10 text-slate-400"
+            className="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 text-slate-400 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Admin info */}
-        <div className="px-4 py-4 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm">
+        <div className="px-4 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-amber-50">
+            <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-600 font-bold text-sm shrink-0">
               {admin.name[0]}
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{admin.name}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-800 truncate">{admin.name}</p>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${roleBadgeColors[admin.role]}`}>
                 {roleLabels[admin.role]}
               </span>
@@ -137,17 +139,18 @@ export default function AdminDashboardPage() {
 
         {/* Nav */}
         <nav className="flex-1 p-4 space-y-1">
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm bg-amber-500/10 text-amber-400 font-semibold">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-3">Management</p>
+          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm bg-amber-500/10 text-amber-600 font-semibold border border-amber-500/20">
             <Shield className="w-4 h-4" />
             Designer Profiles
           </button>
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-gray-100">
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-red-50 hover:text-red-500 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Sign out
@@ -159,16 +162,16 @@ export default function AdminDashboardPage() {
       <main className="flex-1 lg:ml-64 min-w-0">
 
         {/* Top bar */}
-        <header className="bg-[#1e293b] border-b border-white/10 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <header className="bg-[3b] border-b border-gray-200 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-white/10 text-slate-400"
+              className="lg:hidden p-2 rounded-lg hover:bg-white/10 text-slae-400"
             >
               <Menu className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-white">
+              <h1 className="text-base sm:text-lg font-bold text-hite">
                 Designer Profiles
               </h1>
               <p className="text-xs text-slate-400 hidden sm:block">
@@ -186,14 +189,14 @@ export default function AdminDashboardPage() {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             {stats.map(({ label, value, icon: Icon, change }) => (
-              <div key={label} className="bg-[#1e293b] rounded-xl border border-white/10 p-4 sm:p-5">
+              <div key={label} className="bg-[93b] shadow rounded-xl border border-white/10 p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs text-slate-400">{label}</span>
                   <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
                     <Icon className="w-4 h-4 text-amber-500" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-white">{value}</p>
+                <p className="text-2xl font-bold text-whie">{value}</p>
                 <p className="text-xs text-slate-500 mt-1">{change}</p>
               </div>
             ))}
@@ -208,7 +211,7 @@ export default function AdminDashboardPage() {
                 placeholder="Search by name or email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-[#1e293b] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                className="w-full bg-[1e293b] border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-600 placeholder:text-slate-500 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all"
               />
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -216,10 +219,10 @@ export default function AdminDashboardPage() {
                 <button
                   key={f}
                   onClick={() => setFilterStatus(f)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  className={`px-3 py-1.5 shadow rounded-full text-xs font-medium transition-colors ${
                     filterStatus === f
-                      ? 'bg-amber-500 text-[#0f172a]'
-                      : 'bg-[#1e293b] border border-white/10 text-slate-400 hover:border-amber-500/40'
+                      ? 'bg-amber-500 text-[0f172a]'
+                      : 'bg-[1e293b] border border-white/10 text-slate-400 hover:border-amber-500/40'
                   }`}
                 >
                   {f}
@@ -229,7 +232,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Designer table */}
-          <div className="bg-[#1e293b] rounded-xl border border-white/10 overflow-hidden">
+          <div className="bg-[1e293b] rounded-xl border border-white/10 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -251,23 +254,23 @@ export default function AdminDashboardPage() {
                     </tr>
                   )}
                   {filtered.map((designer) => (
-                    <tr key={designer.id} className="hover:bg-white/5 transition-colors">
+                    <tr key={designer.id} className="hover:bg-white/5 shadow transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm flex-shrink-0">
                             {designer.name[0]}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">{designer.name}</p>
+                            <p className="text-sm font-semibold text-whie truncate">{designer.name}</p>
                             <p className="text-xs text-slate-500 truncate">{designer.email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 hidden sm:table-cell">
-                        <p className="text-sm text-slate-300">{designer.specialty}</p>
+                        <p className="text-sm text-slate-600">{designer.specialty}</p>
                       </td>
                       <td className="px-6 py-4 hidden md:table-cell">
-                        <p className="text-sm text-slate-300">{designer.location}</p>
+                        <p className="text-sm text-slate-600">{designer.location}</p>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[designer.status]}`}>
@@ -275,14 +278,14 @@ export default function AdminDashboardPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 hidden sm:table-cell">
-                        <p className="text-sm text-slate-400">{designer.joined}</p>
+                        <p className="text-sm text-slate-600">{designer.joined}</p>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1 justify-end">
                           {canPerformAction(admin.role, 'view') && (
                             <button
                               onClick={() => router.push(`/admin/designers/${designer.id}`)}
-                              className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                              className="p-1.5 rounded-lg hover:bg-white/10 text-slate-600 hover:text-gray-600 transition-colors"
                               title="View profile"
                             >
                               <Eye className="w-4 h-4" />
@@ -291,7 +294,7 @@ export default function AdminDashboardPage() {
                           {canPerformAction(admin.role, 'verify') && designer.status === 'Pending' && (
                             <button
                               onClick={() => updateDesignerStatus(designer.id, 'Verified')}
-                              className="p-1.5 rounded-lg hover:bg-green-500/10 text-slate-400 hover:text-green-400 transition-colors"
+                              className="p-1.5 rounded-lg hover:bg-green-500/10 text-slate-600 hover:text-green-700 transition-colors"
                               title="Verify"
                             >
                               <CheckCircle className="w-4 h-4" />
@@ -300,7 +303,7 @@ export default function AdminDashboardPage() {
                           {canPerformAction(admin.role, 'suspend') && designer.status === 'Active' && (
                             <button
                               onClick={() => updateDesignerStatus(designer.id, 'Suspended')}
-                              className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors"
+                              className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors"
                               title="Suspend"
                             >
                               <AlertTriangle className="w-4 h-4" />
@@ -309,7 +312,7 @@ export default function AdminDashboardPage() {
                           {canPerformAction(admin.role, 'reject') && designer.status === 'Pending' && (
                             <button
                               onClick={() => updateDesignerStatus(designer.id, 'Rejected')}
-                              className="p-1.5 rounded-lg hover:bg-slate-500/10 text-slate-400 hover:text-slate-300 transition-colors"
+                              className="p-1.5 rounded-lg hover:bg-slate-500/10 text-slate-800 hover:text-slate-300 transition-colors"
                               title="Reject"
                             >
                               <XCircle className="w-4 h-4" />

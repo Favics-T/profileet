@@ -1,13 +1,20 @@
-const TOKEN_COOKIE = 'auth-token'
-const EXPIRES_IN = 86400 // expires in 24 hours time
-import { AdminRole } from '@/type/index'
+import { AdminRole, User } from '@/type/index'
 
+const EXPIRES_IN = 86400 // 24 hours
 
-export function createJWT(email: string): string {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+// ─── Cookie names ──────────────────────────────────────────────────────────
+export const TOKEN_COOKIE        = 'auth-token'         // designer
+export const CLIENT_AUTH_TOKEN   = 'client-auth-token'  // client
+export const ADMIN_TOKEN_COOKIE  = 'admin-auth-token'   // admin
+
+// ─── Designer / Client JWT ─────────────────────────────────────────────────
+
+export function createJWT(email: string, role: 'designer' | 'client'): string {
+  const header  = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
   const payload = btoa(
     JSON.stringify({
       email,
+      role,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + EXPIRES_IN,
     })
@@ -16,50 +23,59 @@ export function createJWT(email: string): string {
   return `${header}.${payload}.${signature}`
 }
 
-export function decodeJWT(token: string): { email: string; exp: number } | null {
+export function decodeJWT(token: string): { email: string; role: User; exp: number } | null {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) return null
     return JSON.parse(atob(parts[1]))
   } catch {
-    return null 
-  }};
+    return null
+  }
+}
 
 export function isTokenValid(token: string): boolean {
   const payload = decodeJWT(token)
   if (!payload) return false
   return payload.exp > Math.floor(Date.now() / 1000)
-};
-
-export function setAuthCookie(token: string): void {
-  document.cookie = `${TOKEN_COOKIE}=${token}; path=/; max-age=${EXPIRES_IN}; SameSite=Strict`
 }
 
+// ─── Role-aware cookie helpers ─────────────────────────────────────────────
+
+// Writes to the correct cookie based on role
+export function setAuthCookie(token: string, role: 'designer' | 'client'): void {
+  const cookieName = role === 'client' ? CLIENT_AUTH_TOKEN : TOKEN_COOKIE
+  document.cookie = `${cookieName}=${token}; path=/; max-age=${EXPIRES_IN}; SameSite=Strict`
+}
+
+// Removes both designer and client cookies on logout
 export function removeAuthCookie(): void {
   document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0`
+  document.cookie = `${CLIENT_AUTH_TOKEN}=; path=/; max-age=0`
 }
 
-export function getTokenFromCookie(): string | null {
+// Reads from a specific cookie by name
+export function getTokenFromCookie(cookieName: string = TOKEN_COOKIE): string | null {
   if (typeof document === 'undefined') return null
-  const match = document.cookie.match(new RegExp(`(?:^|; )${TOKEN_COOKIE}=([^;]*)`))
+  const match = document.cookie.match(new RegExp(`(?:^|; )${cookieName}=([^;]*)`))
   return match ? decodeURIComponent(match[1]) : null
 }
 
-// Admin credentials — hardcoded for learning stage
+// ─── Admin JWT ────────────────────────────────────────────────────────────
+
 export const ADMIN_CREDENTIALS: {
   email: string
   password: string
   role: AdminRole
   name: string
 }[] = [
-  { email: 'super@styledkraft.com', password: 'super123', role: 'super_admin', name: 'Super Admin' },
+  { email: 'super@styledkraft.com',   password: 'super123',   role: 'super_admin',     name: 'Super Admin' },
   { email: 'manager@styledkraft.com', password: 'manager123', role: 'profile_manager', name: 'Profile Manager' },
-  { email: 'support@styledkraft.com', password: 'support123', role: 'support_agent', name: 'Support Agent' },
-  { email: 'auditor@styledkraft.com', password: 'auditor123', role: 'auditor', name: 'Auditor' },
+  { email: 'support@styledkraft.com', password: 'support123', role: 'support_agent',   name: 'Support Agent' },
+  { email: 'auditor@styledkraft.com', password: 'auditor123', role: 'auditor',         name: 'Auditor' },
 ]
 
 export function createAdminJWT(email: string, role: AdminRole): string {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+  const header  = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
   const payload = btoa(
     JSON.stringify({
       email,
@@ -81,8 +97,6 @@ export function decodeAdminJWT(token: string): { email: string; role: AdminRole;
     return null
   }
 }
-
-export const ADMIN_TOKEN_COOKIE = 'admin-auth-token'
 
 export function setAdminCookie(token: string): void {
   document.cookie = `${ADMIN_TOKEN_COOKIE}=${token}; path=/; max-age=${EXPIRES_IN}; SameSite=Strict`
