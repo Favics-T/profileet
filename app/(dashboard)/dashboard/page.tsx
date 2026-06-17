@@ -1,265 +1,303 @@
 'use client'
 
-import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import {
-  Eye, Star, MessageSquare, Calendar, LogOut, Bell,
-  Settings, PlusCircle, Edit3, MapPin, CheckCircle,
-  Clock, TrendingUp, Scissors, ChevronRight, User, Menu, X,
-} from 'lucide-react'
-import { useRouter }  from 'next/navigation'
 import { useProfile } from '@/context/ProfileContext'
 import { useInquiry } from '@/context/InquiryContext'
-
-
-
+import { useSidebar } from '@/context/SidebarContext'
+import { useRouter } from 'next/navigation'
+import {
+  Eye, Star, MessageSquare, Calendar, Bell,
+  PlusCircle, Edit3, MapPin, TrendingUp, CheckCircle,
+  Clock, Menu, ChevronRight, BarChart2, ArrowUpRight,
+} from 'lucide-react'
 
 const stats = [
-  { label: 'Profile Views', value: '1,240', icon: Eye, change: '+12%', up: true },
-  { label: 'Avg. Rating', value: '4.8', icon: Star, change: '+0.2', up: true },
-  { label: 'Inquiries', value: '34', icon: MessageSquare, change: '+8', up: true },
-  { label: 'Active Bookings', value: '6', icon: Calendar, change: '-1', up: false },
+  { label: 'Profile Views', value: '1,240', icon: Eye,          change: '+12%', up: true },
+  { label: 'Avg. Rating',   value: '4.8',   icon: Star,         change: '+0.2', up: true },
+  { label: 'Inquiries',     value: '34',    icon: MessageSquare, change: '+8',  up: true },
+  { label: 'Active Bookings',value: '6',    icon: Calendar,     change: '-1',   up: false },
 ]
 
-const recentInquiries = [
-  { client: 'Amara Obi', service: 'Bridal gown & 2 asoebi', date: 'Jun 10', status: 'New' },
-  { client: 'Funke Adeyemi', service: 'Corporate blazer set', date: 'Jun 9', status: 'Replied' },
-  { client: 'Chisom Eze', service: 'Ankara two-piece', date: 'Jun 8', status: 'Booked' },
-  { client: 'Tola Bello', service: 'Kaftan for husband', date: 'Jun 7', status: 'Replied' },
-]
-
-// const profileSteps = [
-//   { label: 'Basic info', done: true },
-//   { label: 'Profile photo', done: true },
-//   { label: 'Portfolio (min. 6 pieces)', done: true },
-//   { label: 'Pricing & services', done: false },
-//   { label: 'Location & availability', done: false },
-// ]
-
-
-// const completionPct = Math.round(
-//   (profileSteps.filter((s) => s.done).length / profileSteps.length) * 100
-// )
-
-const statusColors: Record<string, string> = {
-  New: 'bg-amber-100 text-amber-700',
-  Replied: 'bg-blue-100 text-blue-700',
-  Booked: 'bg-green-100 text-green-700',
+const statusColors: Record<string, { bg: string; text: string }> = {
+  New:     { bg: 'bg-amber-100',  text: 'text-amber-700' },
+  Replied: { bg: 'bg-blue-100',   text: 'text-blue-700' },
+  Booked:  { bg: 'bg-green-100',  text: 'text-green-700' },
 }
 
-
-
 export default function DashboardPage() {
-  const { user, logout } = useAuth()
-  const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { profile, completionPct, incompleteFields } = useProfile() 
-
+  const { user } = useAuth()
+  const router = useRouter()
+  const { toggle } = useSidebar()
+  const { profile, completionPct, incompleteFields } = useProfile()
   const { inquiries } = useInquiry()
-const newInquiriesCount = inquiries.filter((i) => i.status === 'New').length
 
-const navItems = [
-  { icon: TrendingUp, label: 'Dashboard', active: true, href: '/dashboard' },
-  { icon: User, label: 'My Profile', href: '/dashboard/profile' },
-  { icon: MessageSquare, label: 'Inquiries', badge: newInquiriesCount, href: '/dashboard/inquiries' },
-  { icon: Calendar, label: 'Bookings', href: '/dashboard/bookings' },
-  { icon: Star, label: 'Reviews', href: '/dashboard/reviews' },
-  { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
-]
-
-  // const firstName = user?.email.split('@')[0] ?? 'Designer'
+  const recentInquiries = inquiries.slice(0, 4)
 
   const displayName = profile.fullName
-  ? profile.fullName.split(' ')[0]
-  : user?.email.split('@')[0] ?? 'Designer'
+    ? profile.fullName.split(' ')[0]
+    : user?.email?.split('@')[0] ?? 'Designer'
 
   return (
-    <div className="min-h-screen bg-[#ffffff] flex">
-
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed top-0 left-0 z-40 border-r border-amber-100 h-screen w-64 bg-white flex flex-col
-          transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0`}
-      >
-        <div className="p-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Scissors className="w-5 h-5 text-[#FF6500]" />
-            <span className="font-bold text-lg tracking-wide text-[#422a15]">StyledKraft</span>
+    <>
+      {/* Top bar */}
+      <header className="bg-white border-b border-gray-100 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={toggle}
+            className="lg:hidden p-2 rounded-xl hover:bg-gray-100 text-gray-600 shrink-0"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-[#422a15] truncate">
+              Welcome back, {displayName} 👋
+            </h1>
+            <p className="text-xs text-gray-400 hidden sm:block">
+              Here&apos;s what&apos;s happening with your profile today
+            </p>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors">
+            <Bell className="w-5 h-5 text-gray-500" />
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#FF6500]" />
+          </button>
           <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded-lg hover:bg-gray-100 text-gray-500"
+            onClick={() => router.push('/designer/preview')}
+            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 rounded-full hover:bg-amber-100 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <Eye className="w-3.5 h-3.5" /> View Profile
           </button>
         </div>
+      </header>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map(({ icon: Icon, label, active, badge,href }) => (
-            <button
-              key={label}
-              
-              onClick={() => { 
-                router.push(href)
-                setSidebarOpen(false)}}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                active
-                  ? 'bg-[#FF6500] text-white font-semibold'
-                  : 'text-[#422a15] hover:bg-amber-50'
-              }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span className="flex-1 text-left">{label}</span>
-              {badge && (
-                <span className="bg-[#FF6500] text-[#422a15] text-xs font-bold px-1.5 py-0.5 rounded-full">
-                  {badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
 
-        <div className="p-4 border-t border-gray-100">
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#422a15] hover:bg-red-50 hover:text-red-600 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Log out</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 lg:ml-64 min-w-0">
-
-        {/* Top bar */}
-        <header className="bg-white border-b border-gray-100 shadow-sm px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600 shrink-0"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-bold text-[#422a15] truncate">
-                Welcome back, {displayName} 👋
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">
-                Here&apos;s what&apos;s happening with your profile today.
+        {/* Stats row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {stats.map(({ label, value, icon: Icon, change, up }) => (
+            <div key={label} className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-gray-500 leading-tight">{label}</p>
+                <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4 text-[#FF6500]" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-[#422a15]">{value}</p>
+              <p className={`text-xs mt-1 font-medium flex items-center gap-0.5 ${up ? 'text-green-600' : 'text-red-500'}`}>
+                <ArrowUpRight className={`w-3 h-3 ${up ? '' : 'rotate-180'}`} />
+                {change} this week
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button type="button" className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
-              <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[#FF6500]" />
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard/profile/preview')}
-              className="hidden sm:inline-flex items-center gap-2 text-xs font-medium text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 rounded-full hover:bg-amber-100 transition-colors"
-            >
-              View Profile
-            </button>
-          </div>
-        </header>
+          ))}
+        </div>
 
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
+        {/* Middle row — Inquiries + Profile Strength */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-            {stats.map(({ label, value, icon: Icon, change, up }) => (
-              <div key={label} className="bg-white rounded-xl border border-gray-100 p-4 sm:p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs sm:text-sm text-gray-500 leading-tight">{label}</span>
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-[#FF6500]" />
-                  </div>
+          {/* Recent Inquiries */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-[#422a15]">Recent Inquiries</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Your latest client messages</p>
+              </div>
+              <button
+                onClick={() => router.push('/dashboard/inquiries')}
+                className="flex items-center gap-1 text-xs text-[#FF6500] font-semibold hover:underline"
+              >
+                See all <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {recentInquiries.length === 0 ? (
+              <div className="py-12 text-center text-gray-400">
+                <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">No inquiries yet</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {recentInquiries.map((inq) => {
+                  const sc = statusColors[inq.status] ?? { bg: 'bg-gray-100', text: 'text-gray-600' }
+                  const isNew = inq.status === 'New'
+                  const accentColor = inq.status === 'New' ? '#FF6500' : inq.status === 'Booked' ? '#16a34a' : '#3b82f6'
+                  const avatarColors: Record<string, string> = {
+                    'A': '#be185d', 'F': '#7c3aed', 'C': '#16a34a',
+                    'T': '#0ea5e9', 'N': '#d97706', 'O': '#FF6500',
+                  }
+                  const avatarBg = avatarColors[inq.client[0]] ?? '#422a15'
+
+                  return (
+                    <div
+                      key={inq.id}
+                      className={`relative flex gap-3.5 px-5 py-4 cursor-pointer transition-all group hover:bg-gray-50/80 ${isNew ? 'bg-amber-50/30' : ''}`}
+                      onClick={() => router.push('/dashboard/inquiries')}
+                    >
+                      {/* Left accent bar */}
+                      <div
+                        className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ background: accentColor }}
+                      />
+
+                      {/* Avatar with unread dot */}
+                      <div className="relative shrink-0 mt-0.5">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
+                          style={{ background: avatarBg }}
+                        >
+                          {inq.client[0]}
+                        </div>
+                        {isNew && (
+                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#FF6500] rounded-full border-2 border-white" />
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-0.5">
+                          <p className={`text-sm truncate ${isNew ? 'font-bold text-gray-900' : 'font-semibold text-gray-700'}`}>
+                            {inq.client}
+                          </p>
+                          <span className="text-xs text-gray-400 shrink-0">{inq.date}</span>
+                        </div>
+                        <p className="text-xs font-medium text-[#FF6500] mb-1">{inq.service}</p>
+                        <p className={`text-xs truncate ${isNew ? 'text-gray-600' : 'text-gray-400'}`}>
+                          {inq.message}
+                        </p>
+                      </div>
+
+                      {/* Status badge */}
+                      <div className="shrink-0 self-start mt-0.5">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${sc.bg} ${sc.text}`}>
+                          {inq.status}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Profile Strength */}
+          <div className="bg-white rounded-2xl border border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h2 className="font-semibold text-[#422a15]">Profile Strength</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Complete to attract more clients</p>
+            </div>
+            <div className="px-5 py-4">
+              {/* Ring progress */}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="relative w-16 h-16 shrink-0">
+                  <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="26" fill="none" stroke="#f3f4f6" strokeWidth="7" />
+                    <circle
+                      cx="32" cy="32" r="26" fill="none"
+                      stroke="#FF6500" strokeWidth="7"
+                      strokeDasharray={`${2 * Math.PI * 26}`}
+                      strokeDashoffset={`${2 * Math.PI * 26 * (1 - completionPct / 100)}`}
+                      strokeLinecap="round"
+                      className="transition-all duration-700"
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[#422a15]">
+                    {completionPct}%
+                  </span>
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-[#422a15]">{value}</p>
-                <p className={`text-xs mt-1 font-medium ${up ? 'text-green-600' : 'text-red-500'}`}>
-                  {change} this week
-                </p>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {completionPct === 100 ? 'All done!' : `${incompleteFields.length} left`}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {completionPct === 100 ? 'Profile complete' : 'Fields to fill'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                {incompleteFields.slice(0, 4).map(label => (
+                  <div key={label} className="flex items-center gap-2 text-xs">
+                    <Clock className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                    <span className="text-gray-600">{label}</span>
+                  </div>
+                ))}
+                {completionPct === 100 && (
+                  <div className="flex items-center gap-2 text-xs text-green-600 font-medium">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span>Profile complete!</span>
+                  </div>
+                )}
+              </div>
+
+              {completionPct < 100 && (
+                <button
+                  onClick={() => router.push('/dashboard/profile')}
+                  className="mt-4 w-full py-2 rounded-xl bg-[#FF6500] text-white text-xs font-semibold hover:opacity-90 transition-opacity"
+                >
+                  Complete Profile
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Earnings preview */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-semibold text-[#422a15]">Earnings Overview</h2>
+              <p className="text-xs text-gray-400 mt-0.5">June 2026</p>
+            </div>
+            <button
+              onClick={() => router.push('/dashboard/earnings')}
+              className="flex items-center gap-1 text-xs text-[#FF6500] font-semibold hover:underline"
+            >
+              Full report <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Total Revenue', value: '₦371,000', icon: BarChart2, color: 'text-[#FF6500]', bg: 'bg-orange-50' },
+              { label: 'Completed Orders', value: '1',      icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
+              { label: 'Pending Value',   value: '₦205,000', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+            ].map(({ label, value, icon: Icon, color, bg }) => (
+              <div key={label} className="text-center">
+                <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mx-auto mb-2`}>
+                  <Icon className={`w-5 h-5 ${color}`} />
+                </div>
+                <p className="text-base sm:text-lg font-bold text-[#422a15]">{value}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{label}</p>
               </div>
             ))}
           </div>
-
-          {/* Inquiries + Profile strength */}
-          {/* Profile strength */}
-<div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-  <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
-    <h2 className="font-semibold text-[#422a15]">Profile Strength</h2>
-    <p className="text-xs text-gray-500 mt-0.5">Complete your profile to attract more clients</p>
-  </div>
-  <div className="px-4 sm:px-6 py-4">
-    <div className="flex items-center justify-between mb-2">
-      <span className="text-sm font-medium text-gray-700">{completionPct}% complete</span>
-      <span className="text-xs text-[#FF6500] font-semibold">
-        {incompleteFields.length} remaining
-      </span>
-    </div>
-    <div className="w-full bg-gray-100 rounded-full h-2 mb-5">
-      <div
-        className="bg-[#FF6500] h-2 rounded-full transition-all"
-        style={{ width: `${completionPct}%` }}
-      />
-    </div>
-    <ul className="space-y-3">
-      {incompleteFields.map((label) => (
-        <li key={label} className="flex items-center gap-3 text-sm">
-          <Clock className="w-4 h-4 text-gray-300 shrink-0" />
-          <span className="text-gray-700 font-medium">{label}</span>
-        </li>
-      ))}
-    </ul>
-    {completionPct === 100 && (
-      <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
-        <CheckCircle className="w-4 h-4" />
-        <span>Profile complete!</span>
-      </div>
-    )}
-  </div>
-</div>
-
-          {/* Quick actions */}
-          <div>
-            <h2 className="font-semibold text-[#422a15] mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {[
-                { icon: PlusCircle, label: 'Add Portfolio Piece', desc: 'Upload new work', href: '/dashboard/portfolio/new' },
-  { icon: Edit3, label: 'Edit Profile', desc: 'Update your info', href: '/dashboard/profile' },
-  { icon: MapPin, label: 'Set Location', desc: 'Add your city', href: '/dashboard/profile?section=location' },
-  { icon: TrendingUp, label: 'Boost Profile', desc: 'Get more visibility', href: '/dashboard/boost' },
-              ].map(({ icon: Icon, label, desc,href }) => (
-                <button
-                  key={label}
-                  onClick={() => router.push(href)}
-                  className="bg-white border border-gray-100 rounded-xl p-4 sm:p-5 text-left hover:border-amber-300 hover:shadow-md transition-all group"
-                >
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-amber-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-amber-100 transition-colors">
-                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
-                  </div>
-                  <p className="text-xs sm:text-sm font-semibold text-[#422a15]">{label}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">{desc}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-
         </div>
-      </main>
-    </div>
+
+        {/* Quick Actions */}
+        <div>
+          <h2 className="font-semibold text-[#422a15] mb-3">Quick Actions</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { icon: PlusCircle, label: 'Add Portfolio',  desc: 'Upload new work',    href: '/dashboard/portfolio/new' },
+              { icon: Edit3,      label: 'Edit Profile',   desc: 'Update your info',   href: '/dashboard/profile' },
+              { icon: MapPin,     label: 'Set Location',   desc: 'Add your city',      href: '/dashboard/profile' },
+              { icon: TrendingUp, label: 'Boost Profile',  desc: 'Get more visibility',href: '/dashboard/boost' },
+            ].map(({ icon: Icon, label, desc, href }) => (
+              <button
+                key={label}
+                onClick={() => router.push(href)}
+                className="bg-white border border-gray-100 rounded-2xl p-4 text-left hover:border-amber-200 hover:shadow-sm transition-all group"
+              >
+                <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center mb-3 group-hover:bg-amber-100 transition-colors">
+                  <Icon className="w-4 h-4 text-amber-600" />
+                </div>
+                <p className="text-sm font-semibold text-[#422a15]">{label}</p>
+                <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">{desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </>
   )
 }

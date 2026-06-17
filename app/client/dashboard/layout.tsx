@@ -80,7 +80,7 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
         <div className="px-5 pt-4 pb-2">
           <span
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
-            style={{ background: '#fff3ee', color: '#cc5200' }}
+            style={{ background: 'white', color: '#cc5200' }}
           >
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#FF6500' }} />
             Client portal
@@ -132,7 +132,7 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
       </aside>
 
       {/* ── Main content ── */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col  min-w-0">
 
         {/* Topbar */}
         <header className="bg-white border-b border-gray-100 p-6 shadow flex items-center gap-4 sticky top-0 z-10">
@@ -160,7 +160,7 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-5 sm:p-6">
+        <main className="flex-1 p-5 sm:p-6 bg-white">
           {children}
         </main>
       </div>
