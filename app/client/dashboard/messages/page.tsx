@@ -137,7 +137,7 @@ export default function MessagesPage() {
           </div>
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 flex flex-col gap-4 p-4  overflow-y-auto">
             {filteredConvos.map((convo) => (
               <button
                 key={convo.id}

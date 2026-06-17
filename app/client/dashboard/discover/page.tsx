@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Search, MapPin, Star, Heart, SlidersHorizontal, X } from 'lucide-react'
 
 type Designer = {
@@ -29,7 +30,7 @@ const MOCK_DESIGNERS: Designer[] = [
     available: true,
     styles: ['Bridal', 'Ankara', 'Corporate'],
     initials: 'AN',
-    color: '#FF6500',
+    color: '#1a1a2e',
   },
   {
     id: 2,
@@ -55,7 +56,7 @@ const MOCK_DESIGNERS: Designer[] = [
     available: false,
     styles: ['Kaftan', 'Aso-oke', 'Traditional'],
     initials: 'FA',
-    color: '#7c3aed',
+    color: '#1a1a2e',
   },
   {
     id: 4,
@@ -68,7 +69,7 @@ const MOCK_DESIGNERS: Designer[] = [
     available: true,
     styles: ['Corporate', 'Suits', 'Agbada'],
     initials: 'CO',
-    color: '#0369a1',
+    color: '#1a1a2e',
   },
   {
     id: 5,
@@ -81,7 +82,7 @@ const MOCK_DESIGNERS: Designer[] = [
     available: true,
     styles: ['Evening', 'Cocktail', 'Bridal'],
     initials: 'NE',
-    color: '#be185d',
+    color: '#1a1a2e',
   },
   {
     id: 6,
@@ -94,7 +95,7 @@ const MOCK_DESIGNERS: Designer[] = [
     available: false,
     styles: ['Agbada', 'Traditional', 'Ankara'],
     initials: 'BA',
-    color: '#065f46',
+    color: '#1a1a2e',
   },
 ]
 
@@ -102,6 +103,7 @@ const STYLE_FILTERS = ['All', 'Bridal', 'Ankara', 'Streetwear', 'Corporate', 'Tr
 const LOCATION_FILTERS = ['All', 'Lagos', 'Abuja', 'Port Harcourt', 'Ibadan']
 
 export default function DiscoverPage() {
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [activeStyle, setActiveStyle] = useState('All')
   const [activeLocation, setActiveLocation] = useState('All')
@@ -249,7 +251,7 @@ export default function DiscoverPage() {
           {filtered.map((designer) => (
             <div
               key={designer.id}
-              className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow"
+              className="bg-white shadow border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow"
             >
               {/* Card header */}
               <div className="flex items-start justify-between mb-4">
@@ -326,7 +328,8 @@ export default function DiscoverPage() {
                 </div>
                 <button
                   disabled={!designer.available}
-                  className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  onClick={() => designer.available && router.push(`/client/dashboard/discover/book/${designer.id}`)}
+                  className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-95"
                   style={{ background: designer.available ? '#FF6500' : '#9ca3af' }}
                 >
                   Book now

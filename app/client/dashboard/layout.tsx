@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import Logo from '@/component/ui/Logo';
 
 const NAV_ITEMS = [
   { label: 'Discover',  href: '/client/dashboard/discover',  icon: Compass },
@@ -34,7 +35,7 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen flex">
 
       {/* ── Sidebar ── */}
       {/* Mobile overlay */}
@@ -47,14 +48,15 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
 
       <aside
         className={`
-          fixed top-0 left-0 h-full w-60 bg-white border-r border-gray-100 z-30
+          fixed top-0 left-0 h-screen  w-60 bg-white border-r border-gray-100 z-30
           flex flex-col transition-transform duration-200
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
         `}
       >
         {/* Logo */}
-        <div className="px-5 py-5 flex items-center justify-between border-b border-gray-100">
+        <Logo />
+        {/* <div className="px-5 py-5 flex items-center justify-between border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div
               className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
@@ -72,7 +74,7 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
           >
             <X className="w-4 h-4" />
           </button>
-        </div>
+        </div> */}
 
         {/* Client badge */}
         <div className="px-5 pt-4 pb-2">
@@ -133,7 +135,7 @@ export default function ClientDashboardLayout({ children }: { children: React.Re
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* Topbar */}
-        <header className="bg-white border-b border-gray-100 px-5 py-4 flex items-center gap-4 sticky top-0 z-10">
+        <header className="bg-white border-b border-gray-100 p-6 shadow flex items-center gap-4 sticky top-0 z-10">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden text-gray-500 hover:text-gray-700"

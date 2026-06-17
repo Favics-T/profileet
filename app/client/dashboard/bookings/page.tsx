@@ -111,7 +111,7 @@ export default function BookingsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-4 lg:grid-cols-4  sm:grid-cols-4 gap-3 mb-6">
         {(Object.keys(STATUS_CONFIG) as BookingStatus[]).map((status) => {
           const { label, bg, color, icon: Icon } = STATUS_CONFIG[status]
           return (
