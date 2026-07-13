@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { Inquiry, InquiryStatus } from '@/type/index'
 
 interface InquiryContextType {
@@ -9,69 +9,65 @@ interface InquiryContextType {
   filterStatus: InquiryStatus | 'All'
   setFilterStatus: (status: InquiryStatus | 'All') => void
   updateStatus: (id: string, status: InquiryStatus) => void
+  isLoading: boolean
+  error: string | null
 }
 
-const defaultInquiries: Inquiry[] = [
-  {
-    id: '1',
-    client: 'Amara Obi',
-    service: 'Bridal gown & 2 asoebi',
-    date: 'Jun 10',
-    status: 'New',
-    message: 'Hi, I need a bridal gown and 2 asoebi dresses for my wedding in August. Can we discuss pricing?',
-  },
-  {
-    id: '2',
-    client: 'Funke Adeyemi',
-    service: 'Corporate blazer set',
-    date: 'Jun 9',
-    status: 'Replied',
-    message: 'I would like a corporate blazer set in navy blue. Size 12. What is your turnaround time?',
-  },
-  {
-    id: '3',
-    client: 'Chisom Eze',
-    service: 'Ankara two-piece',
-    date: 'Jun 8',
-    status: 'Booked',
-    message: 'Please I want an Ankara two-piece for a naming ceremony. I have the fabric already.',
-  },
-  {
-    id: '4',
-    client: 'Tola Bello',
-    service: 'Kaftan for husband',
-    date: 'Jun 7',
-    status: 'Replied',
-    message: 'I want to order a kaftan for my husband. He is a size XL. What fabrics do you work with?',
-  },
-  {
-    id: '5',
-    client: 'Ngozi Uche',
-    service: 'Ball gown for dinner',
-    date: 'Jun 6',
-    status: 'New',
-    message: 'I have a black tie dinner in July and need a stunning ball gown. Budget is flexible.',
-  },
-]
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 const InquiryContext = createContext<InquiryContextType | null>(null)
 
 export function InquiryProvider({ children }: { children: ReactNode }) {
-  const [inquiries, setInquiries] = useState<Inquiry[]>(defaultInquiries)
+  const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [filterStatus, setFilterStatus] = useState<InquiryStatus | 'All'>('All')
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchInquiries() {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const res = await fetch(`${API_URL}/api/inquiries`)
+        if (!res.ok) throw new Error(`Request failed (${res.status})`)
+        const data: Inquiry[] = await res.json()
+        setInquiries(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load inquiries')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchInquiries()
+  }, [])
 
   const filtered = filterStatus === 'All'
     ? inquiries
     : inquiries.filter((i) => i.status === filterStatus)
 
-  function updateStatus(id: string, status: InquiryStatus) {
-    setInquiries((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, status } : i))
-    )
+  
+  async function updateStatus(id: string, status: InquiryStatus) {
+    const previous = inquiries
+    setInquiries((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)))
+
+    try {
+      const res = await fetch(`${API_URL}/api/inquiries/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (!res.ok) throw new Error(`Update failed (${res.status})`)
+    } catch (err) {
+      
+      setInquiries(previous)
+      setError(err instanceof Error ? err.message : 'Failed to update status')
+    }
   }
 
   return (
-    <InquiryContext.Provider value={{ inquiries, filtered, filterStatus, setFilterStatus, updateStatus }}>
+    <InquiryContext.Provider
+      value={{ inquiries, filtered, filterStatus, setFilterStatus, updateStatus, isLoading, error }}
+    >
       {children}
     </InquiryContext.Provider>
   )

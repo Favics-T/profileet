@@ -62,7 +62,7 @@ export default function LoginPage() {
         return
       }
 
-      // ✅ role is passed — AuthContext writes correct cookie and redirects correctly
+      // role is passed — AuthContext writes correct cookie and redirects correctly
       login(data.email, role)
 
     } catch {
