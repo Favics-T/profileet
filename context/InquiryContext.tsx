@@ -28,7 +28,7 @@ export function InquiryProvider({ children }: { children: ReactNode }) {
       try {
         setIsLoading(true)
         setError(null)
-        const res = await fetch(`${API_URL}/api/inquiries`)
+        const res = await fetch(`${API_URL}/inquiries`)
         if (!res.ok) throw new Error(`Request failed (${res.status})`)
         const data: Inquiry[] = await res.json()
         setInquiries(data)
@@ -51,7 +51,7 @@ export function InquiryProvider({ children }: { children: ReactNode }) {
     setInquiries((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)))
 
     try {
-      const res = await fetch(`${API_URL}/api/inquiries/${id}`, {
+      const res = await fetch(`${API_URL}/inquiries/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
