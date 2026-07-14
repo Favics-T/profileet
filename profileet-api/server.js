@@ -1,5 +1,6 @@
 // import inquiriesRoute from './route/inquiriesRoute'
 const inquiriesRoute = require('./route/inquiriesRoute')
+const bookingsRoute = require('./route/bookingsRoute')
 const express = require('express')
 const cors = require('cors')
 
@@ -9,6 +10,7 @@ app.use(cors())          // cors allows Next.js app (different port) call this A
 app.use(express.json())  // ability to read JSON request bodies
 
 app.use('/inquiries', inquiriesRoute)
+app.use('/bookings',bookingsRoute);
 
 
 const PORT = 4000

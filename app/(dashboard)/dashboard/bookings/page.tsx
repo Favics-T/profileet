@@ -9,46 +9,10 @@ import {
   PhoneCall, CreditCard, ChevronRight,
 } from 'lucide-react'
 import { useSidebar } from '@/context/SidebarContext'
+import {Measurement,Consultation,BookingStatus,BookingRequest } from '@/type/booking'
+import { useBooking } from '@/context/BookingContext';
 
-/* ─── TYPES ─── */
-type BookingStatus = 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled'
 
-interface Measurement {
-  chest?: string; waist?: string; hips?: string; shoulder?: string
-  sleeveLength?: string; dressLength?: string; height?: string; weight?: string
-}
-
-interface Consultation {
-  requested: boolean
-  date?: string; time?: string; note?: string
-  status: 'pending' | 'confirmed' | 'done' | 'none'
-}
-
-interface BookingRequest {
-  id: string
-  client: string
-  initials: string
-  clientColor: string
-  clientPhone?: string
-  service: string
-  occasion: string
-  deliveryDate: string
-  quantity: number
-  urgent: boolean
-  status: BookingStatus
-  receivedAt: string
-  price: number
-  depositPaid: boolean
-  depositAmount: number
-  designNotes: string
-  fabrics: string[]
-  colors: string[]
-  inspirationRef?: string
-  measurements: Measurement
-  consultation: Consultation
-}
-
-/* ─── MOCK DATA ─── */
 const MOCK_BOOKINGS: BookingRequest[] = [
   {
     id: 'BK-2401', client: 'Amara Obiechina', initials: 'AO', clientColor: '#be185d',
@@ -108,7 +72,7 @@ const MOCK_BOOKINGS: BookingRequest[] = [
   },
 ]
 
-/* ─── CONFIG ─── */
+/* CONFIG */
 type IconFC = React.FC<{ className?: string; style?: React.CSSProperties }>
 
 const STATUS_CFG: Record<BookingStatus, { label: string; bg: string; color: string; icon: IconFC }> = {
@@ -135,52 +99,21 @@ const TABS: { label: string; value: BookingStatus | 'all' }[] = [
   { label: 'Cancelled',   value: 'cancelled' },
 ]
 
-/* ─── MAIN PAGE ─── */
+
 export default function DesignerBookingsPage() {
   const { toggle } = useSidebar()
-  const [bookings, setBookings] = useState<BookingRequest[]>(MOCK_BOOKINGS)
-  const [activeTab, setActiveTab] = useState<BookingStatus | 'all'>('all')
-  const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState<BookingRequest | null>(null)
-  const [confirmAction, setConfirmAction] = useState<{ id: string; action: 'accept' | 'cancel' | 'complete' } | null>(null)
-  const [paymentModal, setPaymentModal] = useState<BookingRequest | null>(null)
-
-  const filtered = bookings.filter(b => {
-    const matchTab = activeTab === 'all' || b.status === activeTab
-    const matchSearch =
-      b.client.toLowerCase().includes(search.toLowerCase()) ||
-      b.service.toLowerCase().includes(search.toLowerCase()) ||
-      b.id.toLowerCase().includes(search.toLowerCase())
-    return matchTab && matchSearch
-  })
-
-  const counts = bookings.reduce((acc, b) => {
-    acc[b.status] = (acc[b.status] ?? 0) + 1
-    return acc
-  }, {} as Record<BookingStatus, number>)
-
-  const pendingCount = counts['pending'] ?? 0
-
-  const applyAction = (id: string, action: 'accept' | 'cancel' | 'complete') => {
-    const next: BookingStatus = action === 'accept' ? 'accepted' : action === 'cancel' ? 'cancelled' : 'completed'
-    setBookings(prev => prev.map(b => b.id !== id ? b : { ...b, status: next }))
-    if (selected?.id === id) setSelected(prev => prev ? { ...prev, status: next } : null)
-    setConfirmAction(null)
-  }
-
-  const confirmConsult = (id: string) => {
-    setBookings(prev => prev.map(b =>
-      b.id === id ? { ...b, consultation: { ...b.consultation, status: 'confirmed' } } : b
-    ))
-    if (selected?.id === id)
-      setSelected(prev => prev ? { ...prev, consultation: { ...prev.consultation, status: 'confirmed' } } : null)
-  }
-
-  const markDepositPaid = (id: string) => {
-    setBookings(prev => prev.map(b => b.id !== id ? b : { ...b, depositPaid: true }))
-    if (selected?.id === id) setSelected(prev => prev ? { ...prev, depositPaid: true } : null)
-    setPaymentModal(null)
-  }
+  const {
+     bookings, filtered,
+      activeTab, setActiveTab,
+      search, setSearch,
+      selected, setSelected,
+      confirmAction, setConfirmAction,
+      paymentModal, setPaymentModal,
+      applyAction, confirmConsult, markDepositPaid,
+      counts, pendingCount,
+      isLoading, error,
+  } = useBooking()
+  
 
   if (selected) {
     return (
