@@ -1,7 +1,12 @@
 const express = require('express')
-const router = express.Router();
+const router = express.Router()
+// Post method creates a new method
+//put method replace an entire or existing resources
+// patch method partially update 
+// get method, fetch a resources
+// delete method deletes a resources
 
-const bookings = [
+let bookings = [
   {
     id: 'BK-2401', client: 'Amara Obiechina', initials: 'AO', clientColor: '#be185d',
     clientPhone: '08012345678',
@@ -59,20 +64,143 @@ const bookings = [
     consultation: { requested: false, status: 'none' },
   },
 ]
-const findBooking =(array, id)=> array.find(obj=> obj.id === id)
 
-router.get('/',(req, res)=>{
-    res.json(bookings);
+const findBooking = (id) => bookings.find(b => b.id === id)
+
+const nextId = () => {
+  const nums = bookings.map(b => parseInt(b.id.replace('BK-', ''), 10)).filter(n => !isNaN(n))
+  const max = nums.length ? Math.max(...nums) : 2400
+  return `BK-${max + 1}`
+}
+
+const toInitials = (name = '') =>
+  name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
+
+const COLOURS = ['#be185d', '#0ea5e9', '#7c3aed', '#16a34a', '#d97706', '#0891b2', '#dc2626', '#059669']
+const randomColour = () => COLOURS[Math.floor(Math.random() * COLOURS.length)]
+
+const VALID_STATUSES = ['pending', 'accepted', 'in_progress', 'completed', 'cancelled']
+
+
+router.get('/', (req, res) => {
+  res.json(bookings)
 })
 
-router.get('/:id',(req,res)=>{
-    const booking = findBooking(bookings, req.params.id);
-    if(!booking) return res.status(404).json({error:'Not Found'});
-    res.json(booking)
+
+router.get('/:id', (req, res) => {
+  const booking = findBooking(req.params.id)
+  if (!booking) return res.status(404).json({ error: 'Booking not found' })
+  res.json(booking)
 })
 
 
+router.post('/', (req, res) => {
+  const { client,
+           service, 
+           occasion, 
+           deliveryDate, 
+           price, 
+           depositAmount, 
+           clientPhone, 
+           quantity, 
+           urgent, 
+           designNotes, 
+           fabrics, 
+           colors, 
+           inspirationRef, 
+           measurements, 
+           consultation } = req.body
+
+  if (!client || !service || !occasion || !deliveryDate || price == null || depositAmount == null) {
+    return res.status(400).json({ error: 'client, service, occasion, deliveryDate, price, and depositAmount are required' })
+  }
+
+  const newBooking = {
+    id: nextId(),
+    client,
+    initials: toInitials(client),
+    clientColor: randomColour(),
+    clientPhone: clientPhone ?? '',
+    service,
+    occasion,
+    deliveryDate,
+    quantity: quantity ?? 1,
+    urgent: urgent ?? false,
+    status: 'pending',
+    receivedAt: new Date().toISOString(),
+    price: Number(price),
+    depositPaid: false,
+    depositAmount: Number(depositAmount),
+    designNotes: designNotes ?? '',
+    fabrics: fabrics ?? [],
+    colors: colors ?? [],
+    inspirationRef: inspirationRef ?? '',
+    measurements: measurements ?? {},
+    consultation: consultation ?? { requested: false, status: 'none' },
+  }
+
+  bookings.push(newBooking)
+  res.status(201).json(newBooking)
+})
 
 
+router.patch('/:id', (req, res) => {
+  const booking = findBooking(req.params.id)
+  if (!booking) return res.status(404).json({ error: 'Booking not found' })
 
-module.exports= router;
+  const { status, depositPaid, consultation, designNotes, deliveryDate, price, depositAmount, urgent, quantity, fabrics, colors, inspirationRef, measurements } = req.body
+
+  if (status !== undefined) {
+    if (!VALID_STATUSES.includes(status))
+      return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` })
+    booking.status = status
+  }
+  if (depositPaid !== undefined) booking.depositPaid = depositPaid
+  if (consultation !== undefined) booking.consultation = { ...booking.consultation, ...consultation }
+  if (designNotes !== undefined) booking.designNotes = designNotes
+  if (deliveryDate !== undefined) booking.deliveryDate = deliveryDate
+  if (price !== undefined) booking.price = Number(price)
+  if (depositAmount !== undefined) booking.depositAmount = Number(depositAmount)
+  if (urgent !== undefined) booking.urgent = urgent
+  if (quantity !== undefined) booking.quantity = Number(quantity)
+  if (fabrics !== undefined) booking.fabrics = fabrics
+  if (colors !== undefined) booking.colors = colors
+  if (inspirationRef !== undefined) booking.inspirationRef = inspirationRef
+  if (measurements !== undefined) booking.measurements = { ...booking.measurements, ...measurements }
+
+  res.json(booking)
+})
+
+//  PUT /bookings/:id 
+// Full replace  the body becomes the new booking (id is preserved)
+router.put('/:id', (req, res) => {
+  const idx = bookings.findIndex(b => b.id === req.params.id)
+  if (idx === -1) return res.status(404).json({ error: 'Booking not found' })
+
+  const { client, service, occasion, deliveryDate, price, depositAmount } = req.body
+  if (!client || !service || !occasion || !deliveryDate || price == null || depositAmount == null) {
+    return res.status(400).json({ error: 'client, service, occasion, deliveryDate, price, and depositAmount are required for a full update' })
+  }
+
+  const updated = {
+    ...req.body,
+    id: req.params.id,                  
+    initials: toInitials(req.body.client ?? bookings[idx].client),
+    clientColor: bookings[idx].clientColor, // keep original colour
+    receivedAt: bookings[idx].receivedAt,   // keep original timestamp
+  }
+
+  bookings[idx] = updated
+  res.json(updated)
+})
+
+
+router.delete('/:id', (req, res) => {
+  const idx = bookings.findIndex(b => b.id === req.params.id)
+  if (idx === -1) return res.status(404).json({ error: 'Booking not found' })
+
+  const [deleted] = bookings.splice(idx, 1)
+  res.json({ message: `Booking ${deleted.id} deleted`, deleted })
+})
+
+module.exports = router

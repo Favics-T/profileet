@@ -2,17 +2,9 @@
 
 import { useState } from 'react'
 import { useSidebar } from '@/context/SidebarContext'
-import { Menu, ChevronLeft, ChevronRight, CheckCircle, Info } from 'lucide-react'
-
-type DayStatus = 'open' | 'busy' | 'off'
-
-const DAY_STATUS: Record<DayStatus, { label: string; bg: string; text: string; border: string }> = {
-  open: { label: 'Available',    bg: 'bg-green-100',  text: 'text-green-700', border: 'border-green-300' },
-  busy: { label: 'Fully Booked', bg: 'bg-red-100',    text: 'text-red-600',   border: 'border-red-300' },
-  off:  { label: 'Day Off',      bg: 'bg-gray-100',   text: 'text-gray-500',  border: 'border-gray-300' },
-}
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+import { Menu, ChevronLeft, ChevronRight, CheckCircle, Info, Loader2 } from 'lucide-react'
+import { DayStatus } from '@/type/index'
+import { DAY_STATUS, useAvailability } from '@/lib/useAvailability'
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate()
@@ -26,22 +18,20 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
 
 export default function AvailabilityPage() {
   const { toggle } = useSidebar()
+  const { days: WEEKDAYS, dayStatuses, loading, error, saveDay, clearDay } = useAvailability()
+
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
-  const [dayStatuses, setDayStatuses] = useState<Record<string, DayStatus>>({})
-  const [saved, setSaved] = useState(false)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [savingDate, setSavingDate] = useState<string | null>(null)  // tracks which date is being saved
 
   const daysInMonth = getDaysInMonth(year, month)
-  const firstDay    = getFirstDayOfMonth(year, month)
+  const firstDay = getFirstDayOfMonth(year, month)
 
-  const key = (d: number) => `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-
-  const setStatus = (day: number, status: DayStatus) => {
-    setDayStatuses(prev => ({ ...prev, [key(day)]: status }))
-    setSelectedDay(null)
-  }
+  /** Returns 'YYYY-MM-DD' key for a given day number */
+  const key = (d: number) =>
+    `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 
   const prevMonth = () => {
     if (month === 0) { setYear(y => y - 1); setMonth(11) }
@@ -54,10 +44,22 @@ export default function AvailabilityPage() {
     setSelectedDay(null)
   }
 
-  const handleSave = async () => {
-    await new Promise(r => setTimeout(r, 600))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  /** Set a day's status and persist to backend immediately */
+  const handleSetStatus = async (day: number, status: DayStatus) => {
+    const dateKey = key(day)
+    setSavingDate(dateKey)
+    await saveDay(dateKey, status)
+    setSavingDate(null)
+    setSelectedDay(null)
+  }
+
+  /** Clear a day's status and persist to backend immediately */
+  const handleClearDay = async (day: number) => {
+    const dateKey = key(day)
+    setSavingDate(dateKey)
+    await clearDay(dateKey)
+    setSavingDate(null)
+    setSelectedDay(null)
   }
 
   const openDays = Object.values(dayStatuses).filter(s => s === 'open').length
@@ -73,18 +75,24 @@ export default function AvailabilityPage() {
           </button>
           <div>
             <h1 className="text-base sm:text-lg font-bold text-[#422a15]">Availability</h1>
-            <p className="text-xs text-gray-400 hidden sm:block">Set your open and busy days for clients to see</p>
+            <p className="text-xs text-gray-800 hidden sm:block">Set your open and busy days for clients to see</p>
           </div>
         </div>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FF6500] text-white text-sm font-semibold hover:opacity-90 transition-all"
-        >
-          {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : 'Save Changes'}
-        </button>
+        {loading && (
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Syncing…
+          </span>
+        )}
       </header>
 
       <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto w-full space-y-5">
+
+        {/* Error banner */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
         {/* Legend */}
         <div className="flex flex-wrap gap-2">
@@ -111,7 +119,7 @@ export default function AvailabilityPage() {
 
           {/* Day headers */}
           <div className="grid grid-cols-7 mb-2">
-            {WEEKDAYS.map(d => (
+            {(WEEKDAYS.length ? WEEKDAYS : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']).map(d => (
               <div key={d} className="text-center text-xs font-semibold text-gray-400 py-1">{d}</div>
             ))}
           </div>
@@ -126,21 +134,23 @@ export default function AvailabilityPage() {
               const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
               const isPast = new Date(year, month, day) < new Date(today.getFullYear(), today.getMonth(), today.getDate())
               const isSelected = selectedDay === day
+              const isSaving = savingDate === k
               const cfg = status ? DAY_STATUS[status] : null
 
               return (
                 <button
                   key={day}
                   onClick={() => !isPast && setSelectedDay(isSelected ? null : day)}
-                  disabled={isPast}
+                  disabled={isPast || isSaving}
                   className={`
                     aspect-square rounded-xl text-xs font-semibold transition-all flex items-center justify-center relative
-                    ${isPast ? 'opacity-30 cursor-not-allowed text-gray-400' : 'cursor-pointer'}
+                    ${isPast ? 'opacity-30 cursor-not-allowed text-gray-600' : 'cursor-pointer'}
                     ${isSelected ? 'ring-2 ring-[#FF6500] ring-offset-1' : ''}
+                    ${isSaving ? 'opacity-60' : ''}
                     ${cfg ? `${cfg.bg} ${cfg.text}` : isToday ? 'bg-[#FF6500]/10 text-[#FF6500]' : 'hover:bg-gray-50 text-gray-700'}
                   `}
                 >
-                  {day}
+                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : day}
                   {isToday && !status && <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#FF6500] rounded-full" />}
                 </button>
               )
@@ -158,7 +168,7 @@ export default function AvailabilityPage() {
               {(Object.entries(DAY_STATUS) as [DayStatus, typeof DAY_STATUS[DayStatus]][]).map(([status, cfg]) => (
                 <button
                   key={status}
-                  onClick={() => setStatus(selectedDay, status)}
+                  onClick={() => handleSetStatus(selectedDay, status)}
                   className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition-all ${cfg.bg} ${cfg.text} ${cfg.border} hover:opacity-80`}
                 >
                   {cfg.label}
@@ -166,7 +176,7 @@ export default function AvailabilityPage() {
               ))}
               {dayStatuses[key(selectedDay)] && (
                 <button
-                  onClick={() => { setDayStatuses(prev => { const n = { ...prev }; delete n[key(selectedDay!)]; return n }); setSelectedDay(null) }}
+                  onClick={() => handleClearDay(selectedDay)}
                   className="px-3 py-2.5 rounded-xl text-xs font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50"
                 >
                   Clear
@@ -200,6 +210,7 @@ export default function AvailabilityPage() {
           <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-700">
             Your availability is shown on your public profile. Clients won&apos;t be able to request bookings on days marked <strong>Fully Booked</strong>.
+            Changes are saved automatically when you pick a status.
           </p>
         </div>
 

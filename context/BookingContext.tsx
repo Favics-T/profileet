@@ -3,6 +3,25 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { BookingStatus, Measurement, Consultation, BookingRequest } from '@/type/booking'
 
+
+export interface NewBookingPayload {
+  client: string
+  clientPhone?: string
+  service: string
+  occasion: string
+  deliveryDate: string
+  quantity?: number
+  urgent?: boolean
+  price: number
+  depositAmount: number
+  designNotes?: string
+  fabrics?: string[]
+  colors?: string[]
+  inspirationRef?: string
+  measurements?: Measurement
+  consultation?: Consultation
+}
+
 interface BookingContextType {
   bookings: BookingRequest[]
   filtered: BookingRequest[]
@@ -19,6 +38,10 @@ interface BookingContextType {
   applyAction: (id: string, action: 'accept' | 'cancel' | 'complete') => void
   confirmConsult: (id: string) => void
   markDepositPaid: (id: string) => void
+  /** Add a brand-new booking via POST /bookings */
+  addBooking: (data: NewBookingPayload) => Promise<void>
+  /** Delete a booking via DELETE /bookings/:id */
+  deleteBooking: (id: string) => Promise<void>
   counts: Record<BookingStatus, number>
   pendingCount: number
   isLoading: boolean
@@ -28,6 +51,7 @@ interface BookingContextType {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 const BookingContext = createContext<BookingContextType | null>(null)
+
 
 export function BookingProvider({ children }: { children: ReactNode }) {
   const [bookings, setBookings] = useState<BookingRequest[]>([])
@@ -57,6 +81,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     fetchBookings()
   }, [])
 
+  
   const filtered = bookings.filter(b => {
     const matchTab = activeTab === 'all' || b.status === activeTab
     const matchSearch =
@@ -66,13 +91,6 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     return matchTab && matchSearch
   })
 
-  const applyAction = (id: string, action: 'accept' | 'cancel' | 'complete') => {
-    const next: BookingStatus = action === 'accept' ? 'accepted' : action === 'cancel' ? 'cancelled' : 'completed'
-    setBookings(prev => prev.map(b => (b.id !== id ? b : { ...b, status: next })))
-    if (selected?.id === id) setSelected(prev => (prev ? { ...prev, status: next } : null))
-    setConfirmAction(null)
-  }
-
   const counts = bookings.reduce((acc, b) => {
     acc[b.status] = (acc[b.status] ?? 0) + 1
     return acc
@@ -80,20 +98,112 @@ export function BookingProvider({ children }: { children: ReactNode }) {
 
   const pendingCount = counts['pending'] ?? 0
 
-  const confirmConsult = (id: string) => {
+  
+  const applyAction = async (id: string, action: 'accept' | 'cancel' | 'complete') => {
+    const next: BookingStatus = action === 'accept' ? 'accepted' : action === 'cancel' ? 'cancelled' : 'completed'
+
+    // Optimistic update
+    const previous = bookings
+    setBookings(prev => prev.map(b => (b.id !== id ? b : { ...b, status: next })))
+    if (selected?.id === id) setSelected(prev => (prev ? { ...prev, status: next } : null))
+    setConfirmAction(null)
+
+    try {
+      const res = await fetch(`${API_URL}/bookings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: next }),
+      })
+      if (!res.ok) throw new Error(`Update failed (${res.status})`)
+    } catch (err) {
+      // Roll back on error
+      setBookings(previous)
+      if (selected?.id === id) setSelected(previous.find(b => b.id === id) ?? null)
+      setError(err instanceof Error ? err.message : 'Failed to update booking')
+    }
+  }
+
+  
+  const confirmConsult = async (id: string) => {
+    // Optimistic update
+    const previous = bookings
+    const updatedConsult = { status: 'confirmed' as const }
     setBookings(prev => prev.map(b =>
       b.id === id ? { ...b, consultation: { ...b.consultation, status: 'confirmed' } } : b
     ))
     if (selected?.id === id)
       setSelected(prev => (prev ? { ...prev, consultation: { ...prev.consultation, status: 'confirmed' } } : null))
+
+    try {
+      const res = await fetch(`${API_URL}/bookings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ consultation: updatedConsult }),
+      })
+      if (!res.ok) throw new Error(`Update failed (${res.status})`)
+    } catch (err) {
+      setBookings(previous)
+      if (selected?.id === id) setSelected(previous.find(b => b.id === id) ?? null)
+      setError(err instanceof Error ? err.message : 'Failed to confirm consultation')
+    }
   }
 
-  const markDepositPaid = (id: string) => {
+  // ─── markDepositPaid ──────────────────────────────────────────────────────
+  const markDepositPaid = async (id: string) => {
+    // Optimistic update
+    const previous = bookings
     setBookings(prev => prev.map(b => (b.id !== id ? b : { ...b, depositPaid: true })))
     if (selected?.id === id) setSelected(prev => (prev ? { ...prev, depositPaid: true } : null))
     setPaymentModal(null)
+
+    try {
+      const res = await fetch(`${API_URL}/bookings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ depositPaid: true }),
+      })
+      if (!res.ok) throw new Error(`Update failed (${res.status})`)
+    } catch (err) {
+      setBookings(previous)
+      if (selected?.id === id) setSelected(previous.find(b => b.id === id) ?? null)
+      setError(err instanceof Error ? err.message : 'Failed to mark deposit as paid')
+    }
   }
 
+  // ─── addBooking ───────────────────────────────────────────────────────────
+  const addBooking = async (data: NewBookingPayload) => {
+    try {
+      const res = await fetch(`${API_URL}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error(`Create failed (${res.status})`)
+      const created: BookingRequest = await res.json()
+      setBookings(prev => [created, ...prev])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create booking')
+      throw err // re-throw so the form can handle it
+    }
+  }
+
+  // ─── deleteBooking ────────────────────────────────────────────────────────
+  const deleteBooking = async (id: string) => {
+    // Optimistic update
+    const previous = bookings
+    setBookings(prev => prev.filter(b => b.id !== id))
+    if (selected?.id === id) setSelected(null)
+
+    try {
+      const res = await fetch(`${API_URL}/bookings/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`Delete failed (${res.status})`)
+    } catch (err) {
+      setBookings(previous)
+      setError(err instanceof Error ? err.message : 'Failed to delete booking')
+    }
+  }
+
+  // ─── Provider value ───────────────────────────────────────────────────────
   return (
     <BookingContext.Provider value={{
       bookings, filtered,
@@ -103,6 +213,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       confirmAction, setConfirmAction,
       paymentModal, setPaymentModal,
       applyAction, confirmConsult, markDepositPaid,
+      addBooking, deleteBooking,
       counts, pendingCount,
       isLoading, error,
     }}>

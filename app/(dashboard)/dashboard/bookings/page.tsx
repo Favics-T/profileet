@@ -6,73 +6,12 @@ import {
   Ruler, Palette, Video, User, Search,
   MessageSquare, ArrowLeft, Package, Bell, Star,
   Eye, Sparkles, AlertCircle, Menu, Printer,
-  PhoneCall, CreditCard, ChevronRight,
+  PhoneCall, CreditCard, ChevronRight, Plus, Trash2, Loader2,
 } from 'lucide-react'
 import { useSidebar } from '@/context/SidebarContext'
-import {Measurement,Consultation,BookingStatus,BookingRequest } from '@/type/booking'
-import { useBooking } from '@/context/BookingContext';
+import { Measurement, Consultation, BookingStatus, BookingRequest } from '@/type/booking'
+import { useBooking, NewBookingPayload } from '@/context/BookingContext'
 
-
-const MOCK_BOOKINGS: BookingRequest[] = [
-  {
-    id: 'BK-2401', client: 'Amara Obiechina', initials: 'AO', clientColor: '#be185d',
-    clientPhone: '08012345678',
-    service: 'Bridal Gown', occasion: 'Wedding', deliveryDate: '2026-08-15',
-    quantity: 1, urgent: false, status: 'pending', receivedAt: '2026-06-17T08:30:00',
-    price: 120000, depositPaid: false, depositAmount: 60000,
-    designNotes: 'A floor-length A-line bridal gown with off-shoulder neckline, floral lace overlay on the bodice, cinched waist with a satin bow at the back, and a cathedral train. I want it pure ivory white.',
-    fabrics: ['Lace', 'Silk'], colors: ['#f5f5f0'],
-    inspirationRef: 'https://pinterest.com/pin/example',
-    measurements: { chest: '88', waist: '70', hips: '96', shoulder: '38', dressLength: '180', height: '168', weight: '62' },
-    consultation: { requested: true, date: '2026-06-20', time: '11:00 AM', note: 'Want to discuss the lace pattern and train length in detail.', status: 'pending' },
-  },
-  {
-    id: 'BK-2402', client: 'Tunde Balogun', initials: 'TB', clientColor: '#0ea5e9',
-    clientPhone: '08098765432',
-    service: 'Agbada Set', occasion: 'Traditional Ceremony', deliveryDate: '2026-07-20',
-    quantity: 1, urgent: true, status: 'accepted', receivedAt: '2026-06-16T14:00:00',
-    price: 85000, depositPaid: true, depositAmount: 42500,
-    designNotes: 'Full 3-piece Agbada set — inner sokoto, inner buba, and outer agbada. Deep royal blue with gold embroidery on collar and cuffs. Wide sleeves. No cap needed.',
-    fabrics: ['Aso-oke'], colors: ['#1e3a8a', '#d97706'],
-    measurements: { chest: '102', waist: '88', hips: '105', shoulder: '46', height: '175', weight: '85' },
-    consultation: { requested: false, status: 'none' },
-  },
-  {
-    id: 'BK-2403', client: 'Funke Adeyemi', initials: 'FA', clientColor: '#7c3aed',
-    clientPhone: '09011223344',
-    service: 'Corporate Blazer Set', occasion: 'Corporate Event', deliveryDate: '2026-07-05',
-    quantity: 2, urgent: false, status: 'in_progress', receivedAt: '2026-06-14T09:00:00',
-    price: 55000, depositPaid: true, depositAmount: 27500,
-    designNotes: 'Two matching blazer sets — one wine and one charcoal. Both slim-fit with 2 front buttons. Straight-cut trousers. Would love a subtle pinstripe on the charcoal one.',
-    fabrics: ['Cotton'], colors: ['#7f1d1d', '#374151'],
-    measurements: { chest: '94', waist: '76', hips: '98', shoulder: '40', sleeveLength: '60', dressLength: '100', height: '162', weight: '68' },
-    consultation: { requested: true, date: '2026-06-15', time: '10:00 AM', note: '', status: 'done' },
-  },
-  {
-    id: 'BK-2404', client: 'Chidinma Eze', initials: 'CE', clientColor: '#16a34a',
-    clientPhone: '07033445566',
-    service: 'Evening Gown', occasion: 'Birthday', deliveryDate: '2026-06-28',
-    quantity: 1, urgent: true, status: 'completed', receivedAt: '2026-06-10T11:00:00',
-    price: 75000, depositPaid: true, depositAmount: 75000,
-    designNotes: 'Elegant floor-length evening gown in emerald green. Mermaid silhouette, open back, embellished neckline. Side slit at the left leg.',
-    fabrics: ['Chiffon', 'Velvet'], colors: ['#065f46'],
-    measurements: { chest: '84', waist: '66', hips: '92', dressLength: '175', height: '170', weight: '58' },
-    consultation: { requested: false, status: 'none' },
-  },
-  {
-    id: 'BK-2405', client: 'Emeka Nwosu', initials: 'EN', clientColor: '#d97706',
-    clientPhone: '08155667788',
-    service: 'Ankara Shirt (×3)', occasion: 'Everyday Wear', deliveryDate: '2026-07-10',
-    quantity: 3, urgent: false, status: 'cancelled', receivedAt: '2026-06-12T16:00:00',
-    price: 36000, depositPaid: false, depositAmount: 0,
-    designNotes: '3 casual Ankara shirts in different prints. Short sleeves, relaxed fit.',
-    fabrics: ['Ankara'], colors: [],
-    measurements: { chest: '98', waist: '84', shoulder: '44', sleeveLength: '30', height: '180', weight: '80' },
-    consultation: { requested: false, status: 'none' },
-  },
-]
-
-/* CONFIG */
 type IconFC = React.FC<{ className?: string; style?: React.CSSProperties }>
 
 const STATUS_CFG: Record<BookingStatus, { label: string; bg: string; color: string; icon: IconFC }> = {
@@ -99,21 +38,32 @@ const TABS: { label: string; value: BookingStatus | 'all' }[] = [
   { label: 'Cancelled',   value: 'cancelled' },
 ]
 
-
+/* ─── MAIN PAGE ──────────────────────────────────────────────────────────────*/
 export default function DesignerBookingsPage() {
   const { toggle } = useSidebar()
   const {
-     bookings, filtered,
-      activeTab, setActiveTab,
-      search, setSearch,
-      selected, setSelected,
-      confirmAction, setConfirmAction,
-      paymentModal, setPaymentModal,
-      applyAction, confirmConsult, markDepositPaid,
-      counts, pendingCount,
-      isLoading, error,
+    bookings, filtered,
+    activeTab, setActiveTab,
+    search, setSearch,
+    selected, setSelected,
+    confirmAction, setConfirmAction,
+    paymentModal, setPaymentModal,
+    applyAction, confirmConsult, markDepositPaid,
+    addBooking, deleteBooking,
+    counts, pendingCount,
+    isLoading, error,
   } = useBooking()
-  
+
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)  // booking id to delete
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async (id: string) => {
+    setIsDeleting(true)
+    await deleteBooking(id)
+    setIsDeleting(false)
+    setDeleteConfirm(null)
+  }
 
   if (selected) {
     return (
@@ -125,6 +75,7 @@ export default function DesignerBookingsPage() {
         onComplete={() => applyAction(selected.id, 'complete')}
         onConfirmConsult={() => confirmConsult(selected.id)}
         onRequestPayment={() => setPaymentModal(selected)}
+        onDelete={() => setDeleteConfirm(selected.id)}
         toggle={toggle}
       />
     )
@@ -143,162 +94,196 @@ export default function DesignerBookingsPage() {
             <p className="text-xs text-gray-400 hidden sm:block">{bookings.length} total orders</p>
           </div>
         </div>
-        {pendingCount > 0 && (
-          <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-50 text-amber-700">
-            <Bell className="w-3.5 h-3.5" />
-            {pendingCount} pending
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {pendingCount > 0 && (
+            <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-50 text-amber-700">
+              <Bell className="w-3.5 h-3.5" />
+              {pendingCount} pending
+            </span>
+          )}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-[#FF6500] text-white hover:opacity-90 transition-all"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Booking
+          </button>
+        </div>
       </header>
 
       <div className="p-4 sm:p-6 lg:p-8 space-y-5">
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {(Object.keys(STATUS_CFG) as BookingStatus[]).map(status => {
-            const { label, bg, color, icon: Icon } = STATUS_CFG[status]
-            return (
-              <button
-                key={status}
-                onClick={() => setActiveTab(status)}
-                className="bg-white border border-gray-100 rounded-2xl p-4 text-left hover:shadow-md transition-all"
-                style={activeTab === status ? { borderColor: color, boxShadow: `0 0 0 2px ${color}22` } : {}}
-              >
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: bg }}>
-                    <Icon className="w-3.5 h-3.5" style={{ color }} />
-                  </div>
-                  <span className="text-xs font-medium text-gray-500">{label}</span>
-                </div>
-                <p className="text-2xl font-bold text-gray-800">{counts[status] ?? 0}</p>
-              </button>
-            )
-          })}
-        </div>
+        {/* Error banner */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text" placeholder="Search by client, service, or booking ID…"
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none bg-white focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all"
-          />
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
-          {TABS.map(tab => (
-            <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
-              className="flex-1 min-w-fit px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap"
-              style={activeTab === tab.value
-                ? { background: '#fff', color: '#1a1a2e', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }
-                : { background: 'transparent', color: '#9ca3af' }}
-            >
-              {tab.label}
-              {tab.value !== 'all' && counts[tab.value as BookingStatus]
-                ? ` (${counts[tab.value as BookingStatus]})` : ''}
-            </button>
-          ))}
-        </div>
-
-        {/* List */}
-        {filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <Calendar className="w-10 h-10 mx-auto mb-3 opacity-25" />
-            <p className="text-sm font-medium">No bookings found</p>
+        {/* Loading state */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <Loader2 className="w-8 h-8 animate-spin mb-3 text-[#FF6500]" />
+            <p className="text-sm font-medium">Loading bookings…</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filtered.map(booking => {
-              const { label, bg, color, icon: Icon } = STATUS_CFG[booking.status]
-              return (
-                <div
-                  key={booking.id}
-                  className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all cursor-pointer group"
-                  onClick={() => setSelected(booking)}
+          <>
+            {/* Summary cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {(Object.keys(STATUS_CFG) as BookingStatus[]).map(status => {
+                const { label, bg, color, icon: Icon } = STATUS_CFG[status]
+                return (
+                  <button
+                    key={status}
+                    onClick={() => setActiveTab(status)}
+                    className="bg-white border border-gray-100 rounded-2xl p-4 text-left hover:shadow-md transition-all"
+                    style={activeTab === status ? { borderColor: color, boxShadow: `0 0 0 2px ${color}22` } : {}}
+                  >
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: bg }}>
+                        <Icon className="w-3.5 h-3.5" style={{ color }} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-500">{label}</span>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-800">{counts[status] ?? 0}</p>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text" placeholder="Search by client, service, or booking ID…"
+                value={search} onChange={e => setSearch(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none bg-white focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all"
+              />
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+              {TABS.map(tab => (
+                <button
+                  key={tab.value}
+                  onClick={() => setActiveTab(tab.value)}
+                  className="flex-1 min-w-fit px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap"
+                  style={activeTab === tab.value
+                    ? { background: '#fff', color: '#1a1a2e', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }
+                    : { background: 'transparent', color: '#9ca3af' }}
                 >
-                  <div className="flex items-start gap-4">
+                  {tab.label}
+                  {tab.value !== 'all' && counts[tab.value as BookingStatus]
+                    ? ` (${counts[tab.value as BookingStatus]})` : ''}
+                </button>
+              ))}
+            </div>
+
+            {/* List */}
+            {filtered.length === 0 ? (
+              <div className="text-center py-20 text-gray-400">
+                <Calendar className="w-10 h-10 mx-auto mb-3 opacity-25" />
+                <p className="text-sm font-medium">No bookings found</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filtered.map(booking => {
+                  const { label, bg, color, icon: Icon } = STATUS_CFG[booking.status]
+                  return (
                     <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0"
-                      style={{ background: booking.clientColor }}
+                      key={booking.id}
+                      className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all cursor-pointer group"
+                      onClick={() => setSelected(booking)}
                     >
-                      {booking.initials}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <div>
-                          <p className="text-sm font-bold text-gray-800">{booking.client}</p>
-                          <p className="text-xs text-gray-400">{booking.service}</p>
+                      <div className="flex items-start gap-4">
+                        <div
+                          className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0"
+                          style={{ background: booking.clientColor }}
+                        >
+                          {booking.initials}
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {booking.urgent && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-600">
-                              ⚡ Urgent
-                            </span>
-                          )}
-                          {!booking.depositPaid && booking.status !== 'cancelled' && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-500">
-                              No Deposit
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: bg, color }}>
-                            <Icon className="w-3 h-3" />
-                            {label}
-                          </span>
-                        </div>
-                      </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div>
+                              <p className="text-sm font-bold text-gray-800">{booking.client}</p>
+                              <p className="text-xs text-gray-400">{booking.service}</p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {booking.urgent && (
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-600">
+                                   Urgent
+                                </span>
+                              )}
+                              {!booking.depositPaid && booking.status !== 'cancelled' && (
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-500">
+                                  No Deposit
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: bg, color }}>
+                                <Icon className="w-3 h-3" />
+                                {label}
+                              </span>
+                            </div>
+                          </div>
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400 mt-2">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(booking.deliveryDate).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                        <span>{booking.occasion}</span>
-                        <span className="font-semibold text-gray-700">₦{booking.price.toLocaleString()}</span>
-                        {booking.consultation.requested && (
-                          <span className="flex items-center gap-1 text-[#FF6500] font-medium">
-                            <Video className="w-3 h-3" /> Consultation
-                          </span>
-                        )}
-                      </div>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400 mt-2">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(booking.deliveryDate).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                            <span>{booking.occasion}</span>
+                            <span className="font-semibold text-gray-700">₦{booking.price.toLocaleString()}</span>
+                            {booking.consultation.requested && (
+                              <span className="flex items-center gap-1 text-[#FF6500] font-medium">
+                                <Video className="w-3 h-3" /> Consultation
+                              </span>
+                            )}
+                          </div>
 
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                        <span className="text-xs text-gray-400 font-mono">{booking.id}</span>
-                        <div className="flex items-center gap-2">
-                          {booking.status === 'pending' && (
-                            <>
-                              <button
-                                onClick={e => { e.stopPropagation(); setConfirmAction({ id: booking.id, action: 'cancel' }) }}
-                                className="text-xs font-medium px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500 transition-all"
-                              >
-                                Decline
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                            <span className="text-xs text-gray-400 font-mono">{booking.id}</span>
+                            <div className="flex items-center gap-2">
+                              {booking.status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); setConfirmAction({ id: booking.id, action: 'cancel' }) }}
+                                    className="text-xs font-medium px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500 transition-all"
+                                  >
+                                    Decline
+                                  </button>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); setConfirmAction({ id: booking.id, action: 'accept' }) }}
+                                    className="text-xs font-semibold px-3 py-1 rounded-lg text-white bg-[#FF6500] hover:opacity-90 transition-all"
+                                  >
+                                    Accept
+                                  </button>
+                                </>
+                              )}
+                              {/* Delete button on cancelled bookings */}
+                              {booking.status === 'cancelled' && (
+                                <button
+                                  onClick={e => { e.stopPropagation(); setDeleteConfirm(booking.id) }}
+                                  className="text-xs font-medium px-3 py-1 rounded-lg border border-gray-200 text-red-400 hover:border-red-300 hover:bg-red-50 transition-all flex items-center gap-1"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Delete
+                                </button>
+                              )}
+                              <button className="flex items-center gap-1 text-xs font-medium text-gray-400 group-hover:text-gray-700 transition-colors">
+                                <Eye className="w-3.5 h-3.5" /> View
                               </button>
-                              <button
-                                onClick={e => { e.stopPropagation(); setConfirmAction({ id: booking.id, action: 'accept' }) }}
-                                className="text-xs font-semibold px-3 py-1 rounded-lg text-white bg-[#FF6500] hover:opacity-90 transition-all"
-                              >
-                                Accept
-                              </button>
-                            </>
-                          )}
-                          <button className="flex items-center gap-1 text-xs font-medium text-gray-400 group-hover:text-gray-700 transition-colors">
-                            <Eye className="w-3.5 h-3.5" /> View
-                          </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                  )
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Confirm modal */}
+      {/* Confirm accept/cancel modal */}
       {confirmAction && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
@@ -326,6 +311,38 @@ export default function DesignerBookingsPage() {
         </div>
       )}
 
+      {/* Delete confirm modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="text-base font-bold text-gray-800 mb-2 text-center">Delete Booking?</h3>
+            <p className="text-sm text-gray-500 mb-5 text-center">
+              This will permanently remove the booking from your records. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {isDeleting ? 'Deleting…' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Payment modal */}
       {paymentModal && (
         <PaymentModal
@@ -334,13 +351,258 @@ export default function DesignerBookingsPage() {
           onConfirm={() => markDepositPaid(paymentModal.id)}
         />
       )}
+
+      {/* Add Booking modal */}
+      {showAddModal && (
+        <AddBookingModal
+          onClose={() => setShowAddModal(false)}
+          onSave={addBooking}
+        />
+      )}
     </>
   )
 }
 
-/* ─── DETAIL PANEL ─── */
+/* ─── ADD BOOKING MODAL ──────────────────────────────────────────────────────*/
+function AddBookingModal({ onClose, onSave }: {
+  onClose: () => void
+  onSave: (data: NewBookingPayload) => Promise<void>
+}) {
+  const [form, setForm] = useState({
+    client: '',
+    clientPhone: '',
+    service: '',
+    occasion: '',
+    deliveryDate: '',
+    quantity: '1',
+    urgent: false,
+    price: '',
+    depositAmount: '',
+    designNotes: '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+
+  const update = (field: string, value: string | boolean) =>
+    setForm(prev => ({ ...prev, [field]: value }))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError(null)
+
+    if (!form.client.trim() || !form.service.trim() || !form.occasion.trim() || !form.deliveryDate || !form.price || !form.depositAmount) {
+      setFormError('Please fill in all required fields.')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await onSave({
+        client: form.client.trim(),
+        clientPhone: form.clientPhone.trim() || undefined,
+        service: form.service.trim(),
+        occasion: form.occasion.trim(),
+        deliveryDate: form.deliveryDate,
+        quantity: parseInt(form.quantity) || 1,
+        urgent: form.urgent,
+        price: parseFloat(form.price),
+        depositAmount: parseFloat(form.depositAmount),
+        designNotes: form.designNotes.trim() || undefined,
+      })
+      onClose()
+    } catch {
+      setFormError('Failed to create booking. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+          <div>
+            <h2 className="text-base font-bold text-gray-800">New Booking</h2>
+            <p className="text-xs text-gray-400">Fill in the client order details</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 transition-colors">
+            <XCircle className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {formError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-sm text-red-600">
+              {formError}
+            </div>
+          )}
+
+          {/* Client Name */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Client Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.client}
+              onChange={e => update('client', e.target.value)}
+              placeholder="e.g. Amara Obiechina"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all"
+            />
+          </div>
+
+          {/* Client Phone */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone Number</label>
+            <input
+              type="tel"
+              value={form.clientPhone}
+              onChange={e => update('clientPhone', e.target.value)}
+              placeholder="e.g. 08012345678"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all"
+            />
+          </div>
+
+          {/* Service */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Service / Garment <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.service}
+              onChange={e => update('service', e.target.value)}
+              placeholder="e.g. Bridal Gown, Agbada Set"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all"
+            />
+          </div>
+
+          {/* Occasion */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Occasion <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.occasion}
+              onChange={e => update('occasion', e.target.value)}
+              placeholder="e.g. Wedding, Birthday, Corporate"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all"
+            />
+          </div>
+
+          {/* Delivery Date + Quantity (side by side) */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Delivery Date <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="date"
+                value={form.deliveryDate}
+                onChange={e => update('deliveryDate', e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Qty</label>
+              <input
+                type="number"
+                min="1"
+                value={form.quantity}
+                onChange={e => update('quantity', e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Price + Deposit (side by side) */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Total Price (₦) <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={form.price}
+                onChange={e => update('price', e.target.value)}
+                placeholder="120000"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Deposit (₦) <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={form.depositAmount}
+                onChange={e => update('depositAmount', e.target.value)}
+                placeholder="60000"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Design Notes */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Design Notes</label>
+            <textarea
+              rows={3}
+              value={form.designNotes}
+              onChange={e => update('designNotes', e.target.value)}
+              placeholder="Describe the outfit style, colour preferences, fabric, etc."
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF6500] focus:ring-2 focus:ring-[#FF6500]/10 transition-all resize-none"
+            />
+          </div>
+
+          {/* Urgent toggle */}
+          <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-orange-700">⚡ Mark as Urgent</p>
+              <p className="text-xs text-orange-500">Highlights this booking for priority attention</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => update('urgent', !form.urgent)}
+              className={`w-11 h-6 rounded-full transition-all relative ${form.urgent ? 'bg-[#FF6500]' : 'bg-gray-200'}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${form.urgent ? 'left-5' : 'left-0.5'}`} />
+            </button>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#FF6500] hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {saving ? 'Creating…' : 'Create Booking'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+/* ─── DETAIL PANEL ────────────────────────────────────────────────────────────*/
 function DetailPanel({
-  booking, onBack, onAccept, onCancel, onComplete, onConfirmConsult, onRequestPayment, toggle,
+  booking, onBack, onAccept, onCancel, onComplete, onConfirmConsult, onRequestPayment, onDelete, toggle,
 }: {
   booking: BookingRequest
   onBack: () => void
@@ -349,6 +611,7 @@ function DetailPanel({
   onComplete: () => void
   onConfirmConsult: () => void
   onRequestPayment: () => void
+  onDelete: () => void
   toggle: () => void
 }) {
   const [activeSection, setActiveSection] = useState<'design' | 'measurements' | 'consultation'>('design')
@@ -426,7 +689,6 @@ function DetailPanel({
       )}`
     : null
 
-  /* Progress tracker step index */
   const progressIdx = booking.status === 'cancelled'
     ? -1
     : PROGRESS_STEPS.findIndex(s => s.status === booking.status)
@@ -452,6 +714,13 @@ function DetailPanel({
             className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all"
           >
             <Printer className="w-3.5 h-3.5" /> Invoice
+          </button>
+          {/* Delete button on detail panel */}
+          <button
+            onClick={onDelete}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-all"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Delete
           </button>
           <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: bg, color }}>
             <StatusIcon className="w-3.5 h-3.5" />
@@ -711,10 +980,10 @@ function DetailPanel({
                   {(() => {
                     const s = booking.consultation.status
                     const cfg = {
-                      pending:  { label: 'Awaiting Confirmation', bg: '#fffbeb', color: '#d97706' },
-                      confirmed:{ label: 'Confirmed',             bg: '#f0fdf4', color: '#16a34a' },
-                      done:     { label: 'Done',                  bg: '#eff6ff', color: '#2563eb' },
-                      none:     { label: 'N/A',                   bg: '#f3f4f6', color: '#9ca3af' },
+                      pending:   { label: 'Awaiting Confirmation', bg: '#fffbeb', color: '#d97706' },
+                      confirmed: { label: 'Confirmed',             bg: '#f0fdf4', color: '#16a34a' },
+                      done:      { label: 'Done',                  bg: '#eff6ff', color: '#2563eb' },
+                      none:      { label: 'N/A',                   bg: '#f3f4f6', color: '#9ca3af' },
                     }[s]
                     return (
                       <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: cfg.bg, color: cfg.color }}>
@@ -777,7 +1046,7 @@ function DetailPanel({
   )
 }
 
-/* ─── PAYMENT MODAL ─── */
+/* ─── PAYMENT MODAL ───────────────────────────────────────────────────────────*/
 function PaymentModal({ booking, onClose, onConfirm }: {
   booking: BookingRequest; onClose: () => void; onConfirm: () => void
 }) {
@@ -861,7 +1130,7 @@ function PaymentModal({ booking, onClose, onConfirm }: {
   )
 }
 
-/* ─── Helper ─── */
+/* ─── Helper ─────────────────────────────────────────────────────────────────*/
 function InfoChip({ icon: Icon, label, value, mono = false, accent = false }: {
   icon: React.FC<{ className?: string }>; label: string; value: string; mono?: boolean; accent?: boolean
 }) {

@@ -55,3 +55,5 @@ export type User = {
   email: string
   role: 'designer' | 'client'
 }
+
+export type DayStatus = 'open' | 'busy' | 'off'
