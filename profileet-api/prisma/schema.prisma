@@ -1,12 +1,8 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -14,3 +10,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model DesignerProfile {
+  id                Int @id
+  fullName          String   @default("")
+  specialty         String   @default("")
+  location          String   @default("")
+  bio               String   @default("")
+  phone             String   @default("")
+  yearsOfExperience Int      @default(0)
+  avatar            String?  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+
+model Booking {
+  id             String   @id @default(cuid())
+  client         String
+  initials       String
+  clientColor    String
+  clientPhone    String   @default("")
+  service        String
+  occasion       String
+  deliveryDate   String
+  quantity       Int      @default(1)
+  urgent         Boolean  @default(false)
+  status         String   @default("pending")
+  receivedAt     String
+  price          Int
+  depositPaid    Boolean  @default(false)
+  depositAmount  Int
+  designNotes    String   @default("")
+  fabrics        String[] @default([])
+  colors         String[] @default([])
+  inspirationRef String   @default("")
+  measurements   Json?
+  consultation   Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+ 
+model Inquiry {
+  id        String   @id @default(cuid())
+  client    String
+  service   String
+  date      String                          
+  status    String   @default("New")       
+  message   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model Availability {
+  date   String @id                         
+  status String   
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt                          
+}
+
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      String   @default("designer")   
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

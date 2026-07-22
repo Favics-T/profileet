@@ -73,9 +73,13 @@ export default function EditProfilePage() {
 
   const onSubmit = async (data: ProfileFormValues) => {
     await new Promise(r => setTimeout(r, 600))
-    updateProfile(data)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    try {
+      await updateProfile(data)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch {
+      // updateProfile already sets error state in context — no extra handling needed here
+    }
   }
 
   const displayName = profile.fullName || user?.email?.split('@')[0] || 'Designer'

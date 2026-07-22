@@ -6,10 +6,20 @@ import { useInquiry } from '@/context/InquiryContext'
 import { useProfile } from '@/context/ProfileContext'
 import { useSidebar } from '@/context/SidebarContext'
 import {
-  Scissors, LogOut, X,  ExternalLink, 
+  Scissors, TrendingUp, User, MessageSquare, Calendar,
+  Star, Settings, LogOut, X, BarChart2, ExternalLink, CalendarDays,
 } from 'lucide-react'
-import { navItems } from '@/constant/navlinks'
 
+const navItems = [
+  { icon: TrendingUp,    label: 'Dashboard',    href: '/dashboard' },
+  { icon: User,          label: 'My Profile',   href: '/dashboard/profile' },
+  { icon: MessageSquare, label: 'Inquiries',    href: '/dashboard/inquiries' },
+  { icon: Calendar,      label: 'Bookings',     href: '/dashboard/bookings' },
+  { icon: CalendarDays,  label: 'Availability', href: '/dashboard/availability' },
+  { icon: Star,          label: 'Reviews',      href: '/dashboard/reviews' },
+  { icon: BarChart2,     label: 'Earnings',     href: '/dashboard/earnings' },
+  { icon: Settings,      label: 'Settings',     href: '/dashboard/settings' },
+]
 
 export default function DashboardSidebar() {
   const { logout, user } = useAuth()

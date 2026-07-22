@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/AuthContext'
 import { useProfile } from '@/context/ProfileContext'
 import { useInquiry } from '@/context/InquiryContext'
+import { useBooking } from '@/context/BookingContext'
 import { useSidebar } from '@/context/SidebarContext'
 import { useRouter } from 'next/navigation'
 import {
@@ -10,13 +11,6 @@ import {
   PlusCircle, Edit3, MapPin, TrendingUp, CheckCircle,
   Clock, Menu, ChevronRight, BarChart2, ArrowUpRight,
 } from 'lucide-react'
-
-const stats = [
-  { label: 'Profile Views', value: '1,240', icon: Eye,          change: '+12%', up: true },
-  { label: 'Avg. Rating',   value: '4.8',   icon: Star,         change: '+0.2', up: true },
-  { label: 'Inquiries',     value: '34',    icon: MessageSquare, change: '+8',  up: true },
-  { label: 'Active Bookings',value: '6',    icon: Calendar,     change: '-1',   up: false },
-]
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   New:     { bg: 'bg-amber-100',  text: 'text-amber-700' },
@@ -30,8 +24,34 @@ export default function DashboardPage() {
   const { toggle } = useSidebar()
   const { profile, completionPct, incompleteFields } = useProfile()
   const { inquiries } = useInquiry()
+  const { bookings } = useBooking()
 
   const recentInquiries = inquiries.slice(0, 4)
+
+  // ── Computed stats from real data ────────────────────────────────────────
+  const activeBookings = bookings.filter(
+    (b) => b.status === 'accepted' || b.status === 'in_progress' || b.status === 'pending'
+  ).length
+
+  const totalRevenue = bookings
+    .filter((b) => b.status === 'completed')
+    .reduce((sum, b) => sum + b.price, 0)
+
+  const pendingRevenue = bookings
+    .filter((b) => b.status === 'pending' || b.status === 'accepted' || b.status === 'in_progress')
+    .reduce((sum, b) => sum + b.price, 0)
+
+  const completedOrders = bookings.filter((b) => b.status === 'completed').length
+
+  const formatNaira = (amount: number) =>
+    `₦${amount.toLocaleString('en-NG')}`
+
+  const stats = [
+    { label: 'Profile Views',   value: '—',                         icon: Eye,           change: 'Coming soon', up: true },
+    { label: 'Avg. Rating',     value: '—',                         icon: Star,          change: 'Coming soon', up: true },
+    { label: 'Inquiries',       value: String(inquiries.length),     icon: MessageSquare, change: `${inquiries.filter(i => i.status === 'New').length} new`, up: true },
+    { label: 'Active Bookings', value: String(activeBookings),       icon: Calendar,      change: `${bookings.filter(b => b.status === 'pending').length} pending`, up: activeBookings > 0 },
+  ]
 
   const displayName = profile.fullName
     ? profile.fullName.split(' ')[0]
@@ -257,9 +277,9 @@ export default function DashboardPage() {
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Total Revenue', value: '₦371,000', icon: BarChart2, color: 'text-[#FF6500]', bg: 'bg-orange-50' },
-              { label: 'Completed Orders', value: '1',      icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
-              { label: 'Pending Value',   value: '₦205,000', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+              { label: 'Total Revenue',    value: formatNaira(totalRevenue),   icon: BarChart2,   color: 'text-[#FF6500]',  bg: 'bg-orange-50' },
+              { label: 'Completed Orders', value: String(completedOrders),     icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50'  },
+              { label: 'Pending Value',    value: formatNaira(pendingRevenue), icon: Clock,       color: 'text-amber-600', bg: 'bg-amber-50'  },
             ].map(({ label, value, icon: Icon, color, bg }) => (
               <div key={label} className="text-center">
                 <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mx-auto mb-2`}>

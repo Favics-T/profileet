@@ -5,9 +5,11 @@ import { DesignerProfile } from '@/type/index'
 
 interface ProfileContextType {
   profile: DesignerProfile
-  updateProfile: (data: Partial<DesignerProfile>) => void
+  updateProfile: (data: Partial<DesignerProfile>) => Promise<void>
   completionPct: number
   incompleteFields: string[]
+  isLoading: boolean
+  error: string | null
 }
 
 const defaultProfile: DesignerProfile = {
@@ -21,16 +23,17 @@ const defaultProfile: DesignerProfile = {
 }
 
 const TRACKED_FIELDS: { key: keyof DesignerProfile; label: string }[] = [
-  { key: 'fullName', label: 'Full name' },
-  { key: 'avatar', label: 'Profile photo' },
-  { key: 'specialty', label: 'Specialty' },
-  { key: 'location', label: 'Location' },
-  { key: 'bio', label: 'Bio' },
-  { key: 'phone', label: 'Phone number' },
+  { key: 'fullName',          label: 'Full name' },
+  { key: 'avatar',            label: 'Profile photo' },
+  { key: 'specialty',         label: 'Specialty' },
+  { key: 'location',          label: 'Location' },
+  { key: 'bio',               label: 'Bio' },
+  { key: 'phone',             label: 'Phone number' },
   { key: 'yearsOfExperience', label: 'Years of experience' },
 ]
 
 const STORAGE_KEY = 'styledkraft_designer_profile'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 function getCompletionData(profile: DesignerProfile) {
   const incomplete = TRACKED_FIELDS.filter(({ key }) => {
@@ -48,46 +51,90 @@ function getCompletionData(profile: DesignerProfile) {
   }
 }
 
-function loadProfile(): DesignerProfile {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) return { ...defaultProfile, ...JSON.parse(stored) }
-  } catch {
-    // localStorage unavailable or corrupted
-  }
-  return defaultProfile
-}
-
 const ProfileContext = createContext<ProfileContextType | null>(null)
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<DesignerProfile>(defaultProfile)
-  const [hydrated, setHydrated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Load from localStorage on mount
+  // ─── Load profile from API on mount (fall back to localStorage) ────────────
   useEffect(() => {
-    setProfile(loadProfile())
-    setHydrated(true)
+    async function fetchProfile() {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const res = await fetch(`${API_URL}/profile`)
+        if (!res.ok) throw new Error(`Failed to load profile (${res.status})`)
+        const data = await res.json()
+
+        // Map API field names → DesignerProfile shape
+        const loaded: DesignerProfile = {
+          fullName:          data.fullName          ?? '',
+          specialty:         data.specialty         ?? '',
+          location:          data.location          ?? '',
+          bio:               data.bio               ?? '',
+          phone:             data.phone             ?? '',
+          yearsOfExperience: data.yearsOfExperience ?? 0,
+          avatar:            data.avatar            ?? null,
+        }
+
+        setProfile(loaded)
+        // Keep localStorage in sync as a local cache
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded)) } catch { /* ignore */ }
+      } catch (err) {
+        // API unavailable — fall back to cached localStorage data
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY)
+          if (stored) setProfile({ ...defaultProfile, ...JSON.parse(stored) })
+        } catch { /* ignore */ }
+        setError(err instanceof Error ? err.message : 'Could not load profile')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchProfile()
   }, [])
 
-  // Save to localStorage whenever profile changes
-  useEffect(() => {
-    if (!hydrated) return
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
-    } catch {
-      // localStorage unavailable
-    }
-  }, [profile, hydrated])
+  // ─── Save changes to API (and keep localStorage in sync) ──────────────────
+  async function updateProfile(data: Partial<DesignerProfile>) {
+    // Optimistic local update
+    const previous = profile
+    const next = { ...profile, ...data }
+    setProfile(next)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
 
-  function updateProfile(data: Partial<DesignerProfile>) {
-    setProfile((prev) => ({ ...prev, ...data }))
+    try {
+      const res = await fetch(`${API_URL}/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error(`Failed to save profile (${res.status})`)
+      const saved = await res.json()
+      // Sync with whatever the server returned
+      setProfile({
+        fullName:          saved.fullName          ?? '',
+        specialty:         saved.specialty         ?? '',
+        location:          saved.location          ?? '',
+        bio:               saved.bio               ?? '',
+        phone:             saved.phone             ?? '',
+        yearsOfExperience: saved.yearsOfExperience ?? 0,
+        avatar:            saved.avatar            ?? null,
+      })
+    } catch (err) {
+      // Roll back on error
+      setProfile(previous)
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(previous)) } catch { /* ignore */ }
+      setError(err instanceof Error ? err.message : 'Failed to save profile')
+      throw err
+    }
   }
 
   const { completionPct, incompleteFields } = getCompletionData(profile)
 
   return (
-    <ProfileContext.Provider value={{ profile, updateProfile, completionPct, incompleteFields }}>
+    <ProfileContext.Provider value={{ profile, updateProfile, completionPct, incompleteFields, isLoading, error }}>
       {children}
     </ProfileContext.Provider>
   )

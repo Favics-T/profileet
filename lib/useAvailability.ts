@@ -3,21 +3,20 @@ import { useCallback, useEffect, useState } from 'react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
-// ─── Day status display config ────────────────────────────────────────────────
+
 export const DAY_STATUS: Record<DayStatus, { label: string; bg: string; text: string; border: string }> = {
   open: { label: 'Available',    bg: 'bg-green-100',  text: 'text-green-700', border: 'border-green-300' },
   busy: { label: 'Fully Booked', bg: 'bg-red-100',    text: 'text-red-600',   border: 'border-red-300' },
   off:  { label: 'Day Off',      bg: 'bg-gray-100',   text: 'text-gray-500',  border: 'border-gray-300' },
 }
 
-// ─── useAvailability hook ─────────────────────────────────────────────────────
+
 export const useAvailability = () => {
   const [days, setDays] = useState<string[]>([])
   const [dayStatuses, setDayStatuses] = useState<Record<string, DayStatus>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // ── Fetch weekday labels (Sun–Sat) ─────────────────────────────────────────
   const getWeekdays = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -33,8 +32,7 @@ export const useAvailability = () => {
     }
   }, [])
 
-  // ── Fetch all persisted day statuses ──────────────────────────────────────
-  const fetchAll = useCallback(async () => {
+   const fetchAll = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -49,7 +47,7 @@ export const useAvailability = () => {
     }
   }, [])
 
-  // ── Save a single day's status to the backend ─────────────────────────────
+  // save a single day's status to the backend 
   const saveDay = useCallback(async (date: string, status: DayStatus) => {
     // Optimistic update
     setDayStatuses(prev => ({ ...prev, [date]: status }))
@@ -62,7 +60,7 @@ export const useAvailability = () => {
       })
       if (!res.ok) throw new Error(`Error saving availability: ${res.status}`)
     } catch (err) {
-      // Roll back on error
+      // roll back on error
       setDayStatuses(prev => {
         const next = { ...prev }
         delete next[date]
@@ -72,7 +70,7 @@ export const useAvailability = () => {
     }
   }, [])
 
-  // ── Clear a single day's status from the backend ──────────────────────────
+  // clear a single day's status from the backend 
   const clearDay = useCallback(async (date: string) => {
     // Optimistic update
     const previous = dayStatuses
@@ -91,7 +89,7 @@ export const useAvailability = () => {
     }
   }, [dayStatuses])
 
-  // ── Load on mount ─────────────────────────────────────────────────────────
+  // Load on mount
   useEffect(() => {
     getWeekdays()
     fetchAll()
@@ -108,5 +106,5 @@ export const useAvailability = () => {
   }
 }
 
-// Keep old export name for backward compatibility
+// keeping old export name for backward compatibility
 export const useAvailabilty = useAvailability

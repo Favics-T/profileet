@@ -148,7 +148,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // ─── markDepositPaid ──────────────────────────────────────────────────────
+ 
   const markDepositPaid = async (id: string) => {
     // Optimistic update
     const previous = bookings
@@ -170,7 +170,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // ─── addBooking ───────────────────────────────────────────────────────────
+  
   const addBooking = async (data: NewBookingPayload) => {
     try {
       const res = await fetch(`${API_URL}/bookings`, {
@@ -187,7 +187,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // ─── deleteBooking ────────────────────────────────────────────────────────
+
   const deleteBooking = async (id: string) => {
     // Optimistic update
     const previous = bookings
@@ -203,7 +203,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // ─── Provider value ───────────────────────────────────────────────────────
+ 
   return (
     <BookingContext.Provider value={{
       bookings, filtered,
