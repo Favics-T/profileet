@@ -7,6 +7,11 @@ async function main() {
   await prisma.booking.deleteMany()
   await prisma.inquiry.deleteMany()
   await prisma.availability.deleteMany()
+  await prisma.message.deleteMany()
+  await prisma.messageConversation.deleteMany()
+  await prisma.designerNote.deleteMany()
+  await prisma.designer.deleteMany()
+  await prisma.clientProfile.deleteMany()
   
 
   const bookings = [
@@ -171,9 +176,9 @@ async function main() {
   for (const inquiry of inquiries) {
     await prisma.inquiry.create({ data: inquiry })
   }
-  console.log(`  ✅ ${inquiries.length} inquiries seeded`)
+  console.log(`   ${inquiries.length} inquiries seeded`)
 
-  // ── Reviews ──────────────────────────────────────────────────────────────
+  
   await prisma.review.deleteMany()
 
   const reviews = [
@@ -231,9 +236,57 @@ async function main() {
   for (const review of reviews) {
     await prisma.review.create({ data: review })
   }
-  console.log(`  ✅ ${reviews.length} reviews seeded`)
+  console.log(`   ${reviews.length} reviews seeded`)
 
-  console.log('🌱 Seeding complete!')
+  await prisma.designer.createMany({
+    data: [
+      { id: '1', name: 'Adaeze Nwosu', email: 'adaeze@example.com', specialty: 'Bridal & Ankara', location: 'Lagos, VI', rating: 4.9, reviews: 84, startingPrice: 45000, available: true, status: 'Pending', joined: 'Jun 10, 2025', bio: 'Bridal designer with a focus on elegant, modern silhouettes.', phone: '08012345678', yearsOfExperience: 7, inquiries: 12, bookings: 4, initials: 'AN', color: '#1a1a2e', styles: ['Bridal', 'Ankara', 'Corporate'] },
+      { id: '2', name: 'Emeka Fashola', email: 'emeka@example.com', specialty: 'Streetwear & Casual', location: 'Lagos, Ikeja', rating: 4.7, reviews: 52, startingPrice: 20000, available: true, status: 'Verified', joined: 'Jun 8, 2025', bio: 'Tailor for casual and streetwear looks.', phone: '08023456789', yearsOfExperience: 5, inquiries: 8, bookings: 3, initials: 'EF', color: '#1a1a2e', styles: ['Streetwear', 'Casual', 'Unisex'] },
+      { id: '3', name: 'Fatima Aliyu', email: 'fatima@example.com', specialty: 'Kaftan & Aso-oke', location: 'Abuja, Wuse', rating: 4.8, reviews: 67, startingPrice: 35000, available: false, status: 'Active', joined: 'Jun 5, 2025', bio: 'Traditional and kaftan specialist.', phone: '08034567890', yearsOfExperience: 3, inquiries: 20, bookings: 9, initials: 'FA', color: '#1a1a2e', styles: ['Kaftan', 'Aso-oke', 'Traditional'] },
+      { id: '4', name: 'Chidi Okafor', email: 'chidi@example.com', specialty: 'Corporate & Suits', location: 'Port Harcourt', rating: 4.6, reviews: 39, startingPrice: 30000, available: true, status: 'Active', joined: 'Jun 1, 2025', bio: 'Sharp corporate tailoring and suiting.', phone: '08045678901', yearsOfExperience: 9, inquiries: 5, bookings: 1, initials: 'CO', color: '#1a1a2e', styles: ['Corporate', 'Suits', 'Agbada'] },
+      { id: '5', name: 'Ngozi Eze', email: 'ngozi@example.com', specialty: 'Evening & Cocktail', location: 'Lagos, Lekki', rating: 5, reviews: 101, startingPrice: 60000, available: true, status: 'Pending', joined: 'May 25, 2025', bio: 'Eveningwear and cocktail pieces.', phone: '08056789012', yearsOfExperience: 4, inquiries: 3, bookings: 0, initials: 'NE', color: '#1a1a2e', styles: ['Evening', 'Cocktail', 'Bridal'] },
+      { id: '6', name: 'Bayo Adeleke', email: 'bayo@example.com', specialty: 'Agbada & Traditional', location: 'Ibadan', rating: 4.5, reviews: 28, startingPrice: 25000, available: false, status: 'Rejected', joined: 'May 20, 2025', bio: 'Agbada and traditional wear specialist.', phone: '08067890123', yearsOfExperience: 10, inquiries: 0, bookings: 0, initials: 'BA', color: '#1a1a2e', styles: ['Agbada', 'Traditional', 'Ankara'] },
+    ]
+  })
+
+  await prisma.designerNote.create({
+    data: { id: 'n1', designerId: '2',
+       author: 'Support Agent', role: 'support_agent',
+        content: 'Designer submitted all required documents. Portfolio reviewed and approved.', createdAt: 'Jun 9, 2025' },
+  })
+
+  await prisma.designerNote.create({
+    data: { id: 'n2', designerId: '4', author: 'Profile Manager', role: 'profile_manager', content: 'Account suspended pending investigation into client complaint about undelivered order.', createdAt: 'Jun 1, 2025' },
+  })
+
+  await prisma.designerNote.create({
+    data: { id: 'n3', designerId: '6', author: 'Profile Manager', role: 'profile_manager', content: 'Profile rejected — portfolio does not meet minimum quality standards. Designer may reapply in 30 days.', createdAt: 'May 21, 2025' },
+  })
+
+  await prisma.messageConversation.create({
+    data: {
+      id: 1,
+      designerId: '1',
+      designerName: 'Adaeze Nwosu',
+      initials: 'AN',
+      color: '#FF6500',
+      lastMessage: 'Your gown is ready for the second fitting!',
+      time: '10:42 AM',
+      unread: 2,
+      messages: {
+        create: [
+          { id: 1, from: 'client', text: 'Hi Adaeze, I just confirmed my booking. Looking forward to working with you!', time: 'Mon 9:00 AM' },
+          { id: 2, from: 'designer', text: "Thank you! I've received your brief. Let's schedule the first fitting for next week.", time: 'Mon 9:15 AM' },
+        ]
+      }
+    }
+  })
+
+  await prisma.clientProfile.create({
+    data: { id: 1, firstName: 'Ada', lastName: 'Obi', email: 'ada.obi@example.com', phone: '08012345678', location: 'Lagos, Nigeria', bio: 'I love beautifully made clothes and easy communication with designers.' },
+  })
+
+  console.log(' Seeding complete!')
 
 }
 

@@ -109,3 +109,80 @@ model PortfolioItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model Designer {
+  id              String   @id
+  name            String
+  email           String   @unique
+  specialty       String
+  location        String
+  rating          Float    @default(0)
+  reviews         Int      @default(0)
+  startingPrice   Int      @default(0)
+  available       Boolean  @default(true)
+  status          String   @default("Pending")
+  joined          String
+  bio             String   @default("")
+  phone           String   @default("")
+  yearsOfExperience Int    @default(0)
+  inquiries       Int      @default(0)
+  bookings        Int      @default(0)
+  initials        String
+  color           String
+  styles          String[] @default([])
+  notes           DesignerNote[]
+  messages        MessageConversation[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model DesignerNote {
+  id         String   @id
+  designerId String
+  designer   Designer @relation(fields: [designerId], references: [id], onDelete: Cascade)
+  author     String
+  role       String
+  content    String
+  createdAt  String
+}
+
+model MessageConversation {
+  id          Int      @id
+  designerId  String
+  designer    Designer @relation(fields: [designerId], references: [id], onDelete: Cascade)
+  designerName String
+  initials    String
+  color       String
+  lastMessage String
+  time        String
+  unread      Int      @default(0)
+  messages    Message[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Message {
+  id              Int      @id
+  conversationId  Int
+  conversation    MessageConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  from            String
+  text            String
+  time            String
+  createdAt       DateTime @default(now())
+}
+
+model ClientProfile {
+  id             Int      @id
+  firstName      String   @default("")
+  lastName       String   @default("")
+  email          String   @default("")
+  phone          String   @default("")
+  location       String   @default("")
+  bio            String   @default("")
+  bookingUpdates Boolean  @default(true)
+  newMessages    Boolean  @default(true)
+  promotions     Boolean  @default(false)
+  reminders      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

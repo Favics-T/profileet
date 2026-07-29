@@ -70,7 +70,6 @@ router.post('/', async (req, res) => {
     
     const newBooking = await prisma.booking.create({
       data: {
-        id,
         client,
         initials: toInitials(client),
         clientColor: randomColour(),
