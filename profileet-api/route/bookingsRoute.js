@@ -14,18 +14,8 @@ const toInitials = (name = '') =>
 const COLOURS = ['#be185d', '#0ea5e9', '#7c3aed', '#16a34a', '#d97706', '#0891b2', '#dc2626', '#059669']
 const randomColour = () => COLOURS[Math.floor(Math.random() * COLOURS.length)]
 
-//  Generate next sequential ID 
-const nextId = async () => {
-  // Find the booking with the highest numeric suffix
-  const bookings = await prisma.booking.findMany({ select: { id: true } })
-  const nums = bookings
-    .map((b) => parseInt(b.id.replace('BK-', ''), 10))
-    .filter((n) => !isNaN(n))
-  const max = nums.length ? Math.max(...nums) : 2400
-  return `BK-${max + 1}`
-}
 
-//  GET /bookings 
+
 router.get('/', async (req, res) => {
   try {
     const bookings = await prisma.booking.findMany({
@@ -38,7 +28,7 @@ router.get('/', async (req, res) => {
   }
 })
 
-// GET /bookings/:id 
+
 router.get('/:id', async (req, res) => {
   try {
     const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
@@ -50,7 +40,7 @@ router.get('/:id', async (req, res) => {
   }
 })
 
-//  POST /bookings 
+ 
 router.post('/', async (req, res) => {
   const {
     client,
@@ -77,7 +67,7 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const id = await nextId()
+    
     const newBooking = await prisma.booking.create({
       data: {
         id,
@@ -110,7 +100,6 @@ router.post('/', async (req, res) => {
   }
 })
 
-//  PATCH /bookings/:id 
 router.patch('/:id', async (req, res) => {
   const { id } = req.params
 
@@ -134,7 +123,7 @@ router.patch('/:id', async (req, res) => {
       measurements,
     } = req.body
 
-    // Validate status if provided
+    
     if (status !== undefined && !VALID_STATUSES.includes(status)) {
       return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` })
     }
@@ -169,7 +158,6 @@ router.patch('/:id', async (req, res) => {
   }
 })
 
-//  PUT /bookings/:id 
 router.put('/:id', async (req, res) => {
   const { id } = req.params
   const { client, service, occasion, deliveryDate, price, depositAmount } = req.body
@@ -188,10 +176,10 @@ router.put('/:id', async (req, res) => {
       where: { id },
       data: {
         ...req.body,
-        id,                                     // preserve original id
+        id,                                     
         initials: toInitials(req.body.client ?? existing.client),
-        clientColor: existing.clientColor,      // preserve original colour
-        receivedAt: existing.receivedAt,        // preserve original timestamp
+        clientColor: existing.clientColor,      
+        receivedAt: existing.receivedAt,        
       },
     })
 
@@ -202,7 +190,7 @@ router.put('/:id', async (req, res) => {
   }
 })
 
-// DELETE /bookings/:id
+
 router.delete('/:id', async (req, res) => {
   try {
     const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })

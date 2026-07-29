@@ -2,17 +2,16 @@ const express = require('express')
 const router = express.Router()
 const { prisma } = require('../config/db')
 
-// We always work with a single designer profile (id = 1)
-// If it doesn't exist yet, we create it on first GET.
+
 const PROFILE_ID = 1
 
-//  GET /profile 
+
 router.get('/', async (req, res) => {
   try {
     let profile = await prisma.designerProfile.findUnique({ where: { id: PROFILE_ID } })
 
     if (!profile) {
-      // autoo create an empty profile on first request
+      
       profile = await prisma.designerProfile.create({
         data: { id: PROFILE_ID },
       })
@@ -25,7 +24,7 @@ router.get('/', async (req, res) => {
   }
 })
 
-//  PATCH /profile 
+
 router.patch('/', async (req, res) => {
   const { fullName, specialty, location, bio, phone, yearsOfExperience, avatar } = req.body
 

@@ -3,9 +3,10 @@
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSidebar } from '@/context/SidebarContext'
+import { usePortfolio } from '@/context/PortfolioContext'
 import {
   Upload, X, CheckCircle, ImagePlus, Tag, Menu, ArrowLeft,
-  Trash2, Eye, Sparkles,
+  Trash2, Eye, Sparkles, Loader2,
 } from 'lucide-react'
 
 interface PortfolioItem {
@@ -21,11 +22,14 @@ const TAGS = ['Bridal', 'Traditional', 'Corporate', 'Eveningwear', 'Casual', 'An
 export default function PortfolioNewPage() {
   const router = useRouter()
   const { toggle } = useSidebar()
+  const { publishItems } = usePortfolio()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [items, setItems] = useState<PortfolioItem[]>([])
   const [dragging, setDragging] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [preview, setPreview] = useState<PortfolioItem | null>(null)
 
   const processFiles = useCallback((files: FileList | null) => {
@@ -63,12 +67,27 @@ export default function PortfolioNewPage() {
 
   const handleSave = async () => {
     if (items.length === 0) return
-    await new Promise(r => setTimeout(r, 800))
-    setSaved(true)
-    setTimeout(() => {
-      setSaved(false)
-      router.push('/dashboard')
-    }, 2000)
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await publishItems(
+        items.map(({ title, tag, description, dataUrl }) => ({
+          title,
+          tag,
+          description,
+          imageUrl: dataUrl,
+        }))
+      )
+      setSaved(true)
+      setTimeout(() => {
+        setSaved(false)
+        router.push('/dashboard/portfolio')
+      }, 1500)
+    } catch {
+      setSaveError('Failed to save portfolio items. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -91,9 +110,15 @@ export default function PortfolioNewPage() {
           disabled={items.length === 0 || saved}
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FF6500] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
-          {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : <><Upload className="w-4 h-4" /> Publish {items.length > 0 ? `(${items.length})` : ''}</>}
+          {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Publishing…</> : <><Upload className="w-4 h-4" /> Publish {items.length > 0 ? `(${items.length})` : ''}</>}
         </button>
       </header>
+
+      {saveError && (
+        <div className="mx-4 sm:mx-6 lg:mx-8 mt-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
+          {saveError}
+        </div>
+      )}
 
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full space-y-5">
 
@@ -142,7 +167,7 @@ export default function PortfolioNewPage() {
               <div key={item.id} className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-4">
                 {/* Thumbnail */}
                 <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 relative group cursor-pointer" onClick={() => setPreview(item)}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  
                   <img src={item.dataUrl} alt={item.title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Eye className="w-5 h-5 text-white" />
@@ -204,7 +229,7 @@ export default function PortfolioNewPage() {
       {preview && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setPreview(null)}>
           <div className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+           
             <img src={preview.dataUrl} alt={preview.title} className="w-full rounded-2xl object-contain max-h-[80vh]" />
             <div className="absolute top-3 right-3">
               <button onClick={() => setPreview(null)} className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/40">

@@ -4,7 +4,7 @@ const { prisma } = require('../config/db')
 
 const VALID_STATUSES = ['New', 'Replied', 'Booked']
 
-//  GET /inquiries 
+
 router.get('/', async (req, res) => {
   try {
     const inquiries = await prisma.inquiry.findMany({
@@ -28,7 +28,7 @@ router.get('/:id', async (req, res) => {
   }
 })
 
-//  PATCH /inquiries/:id 
+ 
 router.patch('/:id', async (req, res) => {
   try {
     const inquiry = await prisma.inquiry.findUnique({ where: { id: req.params.id } })

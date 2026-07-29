@@ -9,7 +9,7 @@ import {
   PhoneCall, CreditCard, ChevronRight, Plus, Trash2, Loader2,
 } from 'lucide-react'
 import { useSidebar } from '@/context/SidebarContext'
-import { Measurement, Consultation, BookingStatus, BookingRequest } from '@/type/booking'
+import {  BookingStatus, BookingRequest } from '@/type/booking'
 import { useBooking, NewBookingPayload } from '@/context/BookingContext'
 
 type IconFC = React.FC<{ className?: string; style?: React.CSSProperties }>
@@ -38,7 +38,7 @@ const TABS: { label: string; value: BookingStatus | 'all' }[] = [
   { label: 'Cancelled',   value: 'cancelled' },
 ]
 
-/* ─── MAIN PAGE ──────────────────────────────────────────────────────────────*/
+
 export default function DesignerBookingsPage() {
   const { toggle } = useSidebar()
   const {

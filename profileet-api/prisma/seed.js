@@ -171,9 +171,70 @@ async function main() {
   for (const inquiry of inquiries) {
     await prisma.inquiry.create({ data: inquiry })
   }
-  console.log(`  ${inquiries.length} inquiries seeded`)
+  console.log(`  ✅ ${inquiries.length} inquiries seeded`)
 
-  console.log('Seeding complete!')
+  // ── Reviews ──────────────────────────────────────────────────────────────
+  await prisma.review.deleteMany()
+
+  const reviews = [
+    {
+      client: 'Amara Obi',
+      initials: 'AO',
+      color: '#be185d',
+      service: 'Bridal Gown',
+      rating: 5,
+      date: 'Jun 10, 2026',
+      text: 'My bridal gown was absolutely stunning! The craftsmanship and attention to detail exceeded all my expectations. The fit was perfect and every guest complimented it. I will definitely recommend to all my friends.',
+      helpful: 12,
+      replied: false,
+      bookingId: 'BK-2401',
+    },
+    {
+      client: 'Chidinma Eze',
+      initials: 'CE',
+      color: '#16a34a',
+      service: 'Evening Gown',
+      rating: 5,
+      date: 'Jun 28, 2026',
+      text: 'Fast turnaround and the evening gown fit perfectly on the first try. She understood exactly what I wanted even from my rough sketch. Absolutely loved it!',
+      helpful: 8,
+      replied: true,
+      reply: 'Thank you so much, Chidinma! It was a pleasure creating your gown. You were such a joy to work with. Looking forward to dressing you again! 🧡',
+      bookingId: 'BK-2404',
+    },
+    {
+      client: 'Tunde Balogun',
+      initials: 'TB',
+      color: '#0ea5e9',
+      service: 'Agbada Set',
+      rating: 4,
+      date: 'Jun 20, 2026',
+      text: 'Beautiful agbada set, very professional. Communication throughout was excellent and delivery was on time. Would have given 5 stars but one seam needed slight adjustment.',
+      helpful: 5,
+      replied: false,
+      bookingId: 'BK-2402',
+    },
+    {
+      client: 'Funke Adeyemi',
+      initials: 'FA',
+      color: '#7c3aed',
+      service: 'Corporate Blazer Set',
+      rating: 5,
+      date: 'Jul 5, 2026',
+      text: 'Two blazer sets that looked exactly like the reference photos. My colleagues were impressed. The quality of the cotton fabric was premium.',
+      helpful: 9,
+      replied: false,
+      bookingId: 'BK-2403',
+    },
+  ]
+
+  for (const review of reviews) {
+    await prisma.review.create({ data: review })
+  }
+  console.log(`  ✅ ${reviews.length} reviews seeded`)
+
+  console.log('🌱 Seeding complete!')
+
 }
 
 main()

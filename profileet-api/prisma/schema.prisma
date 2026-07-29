@@ -76,7 +76,36 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
-  role      String   @default("designer")   
+  role      String   @default("designer")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+
+model Review {
+  id        String   @id @default(cuid())
+  client    String
+  initials  String
+  color     String
+  service   String
+  rating    Int
+  date      String
+  text      String
+  helpful   Int      @default(0)
+  replied   Boolean  @default(false)
+  reply     String?
+  bookingId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model PortfolioItem {
+  id          String   @id @default(cuid())
+  title       String
+  tag         String
+  description String   @default("")
+  imageUrl    String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
