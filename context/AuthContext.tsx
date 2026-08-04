@@ -3,7 +3,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  createJWT,
   decodeJWT,
   isTokenValid,
   setAuthCookie,
@@ -21,7 +20,7 @@ interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null
   isLoading: boolean
-  login: (email: string, role: 'designer' | 'client') => void
+  login: (token: string, email: string, role: 'designer' | 'client') => void
   logout: () => void
 }
 
@@ -32,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
-  // On mount — restore session from whichever cookie exists
+  
   useEffect(() => {
     const designerToken = getTokenFromCookie(TOKEN_COOKIE)
     const clientToken   = getTokenFromCookie(CLIENT_AUTH_TOKEN)
@@ -48,9 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  function login(email: string, role: 'designer' | 'client') {
-    const jwt = createJWT(email, role)
-    setAuthCookie(jwt, role)         // writes to correct cookie per role
+  function login(token: string, email: string, role: 'designer' | 'client') {
+    setAuthCookie(token, role)         // writes to correct cookie per role
     setUser({ email, role })
 
     if (role === 'client') {

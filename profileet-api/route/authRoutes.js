@@ -4,7 +4,7 @@ const {
   signup,
   login,
   testProtected,
-} = require("../controllers/auth.controller");
+} = require("../controller/auth.controller");
 
 const router = express.Router();
 

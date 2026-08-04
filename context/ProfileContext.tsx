@@ -58,8 +58,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // ─── Load profile from API on mount (fall back to localStorage) ────────────
-  useEffect(() => {
+   useEffect(() => {
     async function fetchProfile() {
       try {
         setIsLoading(true)
@@ -68,7 +67,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         if (!res.ok) throw new Error(`Failed to load profile (${res.status})`)
         const data = await res.json()
 
-        // Map API field names → DesignerProfile shape
+        
         const loaded: DesignerProfile = {
           fullName:          data.fullName          ?? '',
           specialty:         data.specialty         ?? '',

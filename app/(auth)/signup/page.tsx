@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -10,8 +11,9 @@ import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
 
 type Role = 'designer' | 'client'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
-// Designer schema — email + password + confirm
+
 const designerSchema = z.object({
   email: z.string().email('Please enter a valid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -21,7 +23,7 @@ const designerSchema = z.object({
   path: ['confirmPassword'],
 })
 
-// Client schema — first name + last name + email + password + confirm
+
 const clientSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
@@ -36,7 +38,6 @@ const clientSchema = z.object({
 type DesignerFormValues = z.infer<typeof designerSchema>
 type ClientFormValues = z.infer<typeof clientSchema>
 
-// Password strength scorer (0–4)
 function getStrength(password: string): number {
   let score = 0
   if (password.length >= 6) score++
@@ -49,9 +50,8 @@ function getStrength(password: string): number {
 const strengthColors = ['#E24B4A', '#EF9F27', '#1D9E75', '#1D9E75']
 const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong']
 
-// ─── Designer signup form ──────────────────────────────────────────────────
 
-function DesignerForm({ onSuccess }: { onSuccess: (email: string) => void }) {
+function DesignerForm({ onSuccess }: { onSuccess: (token: string, email: string) => void }) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -70,17 +70,21 @@ function DesignerForm({ onSuccess }: { onSuccess: (email: string) => void }) {
   const onSubmit = async (data: DesignerFormValues) => {
     setServerError(null)
     try {
-      const res = await fetch('https://reqres.in/api/register', {
+      const res = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_REQRES_API_KEY ?? '',
         },
-        body: JSON.stringify({ email: data.email, password: data.password }),
+        body: JSON.stringify({
+          name: data.email.split('@')[0],
+          email: data.email,
+          password: data.password,
+          role: 'designer',
+        }),
       })
       const json = await res.json()
       if (!res.ok) { setServerError(json.error ?? 'Registration failed.'); return }
-      onSuccess(data.email)
+      onSuccess(json.token, json.studio?.email ?? data.email)
     } catch {
       setServerError('Network error. Please check your connection.')
     }
@@ -191,9 +195,8 @@ function DesignerForm({ onSuccess }: { onSuccess: (email: string) => void }) {
   )
 }
 
-// ─── Client signup form ────────────────────────────────────────────────────
 
-function ClientForm({ onSuccess }: { onSuccess: (email: string) => void }) {
+function ClientForm({ onSuccess }: { onSuccess: (token: string, email: string) => void }) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -212,17 +215,21 @@ function ClientForm({ onSuccess }: { onSuccess: (email: string) => void }) {
   const onSubmit = async (data: ClientFormValues) => {
     setServerError(null)
     try {
-      const res = await fetch('https://reqres.in/api/register', {
+      const res = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_REQRES_API_KEY ?? '',
         },
-        body: JSON.stringify({ email: data.email, password: data.password }),
+        body: JSON.stringify({
+          name: `${data.firstName} ${data.lastName}`.trim(),
+          email: data.email,
+          password: data.password,
+          role: 'client',
+        }),
       })
       const json = await res.json()
       if (!res.ok) { setServerError(json.error ?? 'Registration failed.'); return }
-      onSuccess(data.email)
+      onSuccess(json.token, json.studio?.email ?? data.email)
     } catch {
       setServerError('Network error. Please check your connection.')
     }
@@ -359,18 +366,17 @@ function ClientForm({ onSuccess }: { onSuccess: (email: string) => void }) {
   )
 }
 
-// ─── Main signup page ──────────────────────────────────────────────────────
+
 
 export default function SignupPage() {
   const [role, setRole] = useState<Role>('designer')
   const { login } = useAuth()
+  const router = useRouter()
 
   const handleRoleSwitch = (newRole: Role) => setRole(newRole)
-  const handleSuccess = (email: string) => {
-    login(email,role)
-    // TODO: role-aware redirect
-    // if (role === 'client') router.push('/client/dashboard')
-    // if (role === 'designer') router.push('/dashboard')
+  const handleSuccess = (token: string, email: string) => {
+    login(token, email, role)
+    router.push(role === 'client' ? '/client/dashboard' : '/dashboard')
   }
 
   return (
@@ -414,7 +420,7 @@ export default function SignupPage() {
             </button>
           </div>
 
-          {/* Heading — changes by role */}
+        
           <h1 className="text-2xl font-bold text-[#422a15] mb-1">Create your account</h1>
           <p className="text-sm text-gray-500 mb-6">
             {role === 'designer'

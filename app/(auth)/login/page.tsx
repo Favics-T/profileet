@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
 
 type Role = 'designer' | 'client'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -43,11 +44,10 @@ export default function LoginPage() {
     setServerError(null)
 
     try {
-      const res = await fetch('https://reqres.in/api/login', {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_REQRES_API_KEY ?? '',
         },
         body: JSON.stringify({
           email: data.email,
@@ -62,8 +62,8 @@ export default function LoginPage() {
         return
       }
 
-      // role is passed — AuthContext writes correct cookie and redirects correctly
-      login(data.email, role)
+      // 
+      login(json.token, json.studio?.email ?? data.email, role)
 
     } catch {
       setServerError('Network error. Please check your connection.')

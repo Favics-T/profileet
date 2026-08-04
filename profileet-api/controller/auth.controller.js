@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const prisma = require("../config/db")
 
 async function signup(req,res){
-    const {name, email, password}= req.body;
+    const {name, email, password, role}= req.body;
 
     if(!name || !email || !password){
         return res.status(400).json({error:"name , email and password are required"})
@@ -17,7 +17,7 @@ async function signup(req,res){
     });
 
     const token = jwt.sign(
-      { userId: user.id },
+      { studioId: studio.id, email: studio.email, role: role || "designer" },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -25,7 +25,7 @@ async function signup(req,res){
     res.json({
       success: true,
       token,
-      studio: { id: user.id, name: studio.name, email: studio.email },
+      studio: { id: studio.id, name: studio.name, email: studio.email },
     });
   } catch (error) {
     if (error.code === "P2002") {
@@ -37,7 +37,7 @@ async function signup(req,res){
 }
 
 async function login(req, res) {
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: "email and password are required" });
@@ -57,7 +57,7 @@ async function login(req, res) {
     }
 
     const token = jwt.sign(
-      { studioId: studio.id },
+      { studioId: studio.id, email: studio.email, role: role || "designer" },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );

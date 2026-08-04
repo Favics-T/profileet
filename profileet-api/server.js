@@ -14,6 +14,7 @@ const portfolioRoute     = require('./route/portfolioRoute')
 const designersRoute     = require('./route/designersRoute')
 const messagesRoute      = require('./route/messagesRoute')
 const clientProfileRoute  = require('./route/clientProfileRoute')
+const authRoutes         = require('./route/authRoutes')
 
 const app = express()
 
@@ -30,6 +31,7 @@ app.use('/portfolio',   portfolioRoute)
 app.use('/designers',   designersRoute)
 app.use('/messages',    messagesRoute)
 app.use('/client/profile', clientProfileRoute)
+app.use('/auth',        authRoutes)
 
 //  handlled chrome dev tools error
 app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
