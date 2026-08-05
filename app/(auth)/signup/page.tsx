@@ -51,7 +51,7 @@ const strengthColors = ['#E24B4A', '#EF9F27', '#1D9E75', '#1D9E75']
 const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong']
 
 
-function DesignerForm({ onSuccess }: { onSuccess: (token: string, email: string) => void }) {
+function DesignerForm({ onSuccess }: { onSuccess: (token: string, email: string, role: 'designer' | 'client') => void }) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -84,7 +84,8 @@ function DesignerForm({ onSuccess }: { onSuccess: (token: string, email: string)
       })
       const json = await res.json()
       if (!res.ok) { setServerError(json.error ?? 'Registration failed.'); return }
-      onSuccess(json.token, json.studio?.email ?? data.email)
+      const serverRole = json.role === 'client' ? 'client' : 'designer'
+      onSuccess(json.token, json.studio?.email ?? data.email, serverRole)
     } catch {
       setServerError('Network error. Please check your connection.')
     }
@@ -196,7 +197,7 @@ function DesignerForm({ onSuccess }: { onSuccess: (token: string, email: string)
 }
 
 
-function ClientForm({ onSuccess }: { onSuccess: (token: string, email: string) => void }) {
+function ClientForm({ onSuccess }: { onSuccess: (token: string, email: string, role: 'designer' | 'client') => void }) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -229,7 +230,8 @@ function ClientForm({ onSuccess }: { onSuccess: (token: string, email: string) =
       })
       const json = await res.json()
       if (!res.ok) { setServerError(json.error ?? 'Registration failed.'); return }
-      onSuccess(json.token, json.studio?.email ?? data.email)
+      const serverRole = json.role === 'client' ? 'client' : 'designer'
+      onSuccess(json.token, json.studio?.email ?? data.email, serverRole)
     } catch {
       setServerError('Network error. Please check your connection.')
     }
@@ -374,7 +376,7 @@ export default function SignupPage() {
   const router = useRouter()
 
   const handleRoleSwitch = (newRole: Role) => setRole(newRole)
-  const handleSuccess = (token: string, email: string) => {
+  const handleSuccess = (token: string, email: string, role: 'designer' | 'client') => {
     login(token, email, role)
     router.push(role === 'client' ? '/client/dashboard' : '/dashboard')
   }
@@ -447,7 +449,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {/* Render correct form based on role */}
+        
           {role === 'designer'
             ? <DesignerForm onSuccess={handleSuccess} />
             : <ClientForm onSuccess={handleSuccess} />

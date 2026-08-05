@@ -1,26 +1,14 @@
 import { AdminRole, User } from '@/type/index'
 
-const EXPIRES_IN = 86400 // 24 hours
+const EXPIRES_IN = 86400 // 24 hours (matches backend)
 
-export const TOKEN_COOKIE        = 'auth-token'         // designer
-export const CLIENT_AUTH_TOKEN   = 'client-auth-token'  
-export const ADMIN_TOKEN_COOKIE  = 'admin-auth-token'   
+// ─── Cookie names ──────────────────────────────────────────────────────────
+export const TOKEN_COOKIE       = 'auth-token'        // designer
+export const CLIENT_AUTH_TOKEN  = 'client-auth-token' // client
+export const ADMIN_TOKEN_COOKIE = 'admin-auth-token'  // admin
 
-
-
-export function createJWT(email: string, role: 'designer' | 'client'): string {
-  const header  = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-  const payload = btoa(
-    JSON.stringify({
-      email,
-      role,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + EXPIRES_IN,
-    })
-  )
-  const signature = btoa('styledkraft-frontend-secret')
-  return `${header}.${payload}.${signature}`
-}
+// ─── Designer / Client JWT helpers ────────────────────────────────────────
+// Note: tokens are signed by the backend. These helpers only READ / STORE them.
 
 export function decodeJWT(token: string): { email: string; role: User; exp: number } | null {
   try {
@@ -38,26 +26,26 @@ export function isTokenValid(token: string): boolean {
   return payload.exp > Math.floor(Date.now() / 1000)
 }
 
-
+// Writes the correct cookie based on role
 export function setAuthCookie(token: string, role: 'designer' | 'client'): void {
   const cookieName = role === 'client' ? CLIENT_AUTH_TOKEN : TOKEN_COOKIE
   document.cookie = `${cookieName}=${token}; path=/; max-age=${EXPIRES_IN}; SameSite=Strict`
 }
 
-
+// Clears both designer and client cookies on logout
 export function removeAuthCookie(): void {
   document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0`
   document.cookie = `${CLIENT_AUTH_TOKEN}=; path=/; max-age=0`
 }
 
-
+// Reads a cookie by name
 export function getTokenFromCookie(cookieName: string = TOKEN_COOKIE): string | null {
   if (typeof document === 'undefined') return null
   const match = document.cookie.match(new RegExp(`(?:^|; )${cookieName}=([^;]*)`))
   return match ? decodeURIComponent(match[1]) : null
 }
 
-
+// Returns Authorization header for any active session (designer or client)
 export function authHeader(): { Authorization: string } | Record<string, never> {
   const token =
     getTokenFromCookie(TOKEN_COOKIE) ??
@@ -65,34 +53,12 @@ export function authHeader(): { Authorization: string } | Record<string, never> 
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+// ─── Admin JWT helpers ────────────────────────────────────────────────────
+// Admin tokens are signed by the backend. These helpers only READ / STORE them.
 
-export const ADMIN_CREDENTIALS: {
-  email: string
-  password: string
-  role: AdminRole
-  name: string
-}[] = [
-  { email: 'super@styledkraft.com',   password: 'super123',   role: 'super_admin',     name: 'Super Admin' },
-  { email: 'manager@styledkraft.com', password: 'manager123', role: 'profile_manager', name: 'Profile Manager' },
-  { email: 'support@styledkraft.com', password: 'support123', role: 'support_agent',   name: 'Support Agent' },
-  { email: 'auditor@styledkraft.com', password: 'auditor123', role: 'auditor',         name: 'Auditor' },
-]
-
-export function createAdminJWT(email: string, role: AdminRole): string {
-  const header  = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-  const payload = btoa(
-    JSON.stringify({
-      email,
-      role,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + EXPIRES_IN,
-    })
-  )
-  const signature = btoa('styledkraft-admin-secret')
-  return `${header}.${payload}.${signature}`
-}
-
-export function decodeAdminJWT(token: string): { email: string; role: AdminRole; exp: number } | null {
+export function decodeAdminJWT(
+  token: string
+): { email: string; role: AdminRole; name: string; exp: number } | null {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) return null

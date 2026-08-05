@@ -1130,7 +1130,7 @@ function PaymentModal({ booking, onClose, onConfirm }: {
   )
 }
 
-/* ─── Helper ─────────────────────────────────────────────────────────────────*/
+
 function InfoChip({ icon: Icon, label, value, mono = false, accent = false }: {
   icon: React.FC<{ className?: string }>; label: string; value: string; mono?: boolean; accent?: boolean
 }) {

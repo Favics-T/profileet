@@ -4,14 +4,14 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useRouter } from 'next/navigation'
 import { AdminUser } from '@/type/index'
 import {
-  createAdminJWT,
   decodeAdminJWT,
   isTokenValid,
   setAdminCookie,
   removeAdminCookie,
   getAdminTokenFromCookie,
-  ADMIN_CREDENTIALS,
 } from '@/lib/auth'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 interface AdminAuthContextType {
   admin: AdminUser | null
@@ -27,13 +27,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
+  // Restore session from cookie on mount
   useEffect(() => {
     const token = getAdminTokenFromCookie()
     if (token && isTokenValid(token)) {
       const payload = decodeAdminJWT(token)
       if (payload) {
-        const match = ADMIN_CREDENTIALS.find((c) => c.email === payload.email)
-        if (match) setAdmin({ email: match.email, role: payload.role, name: match.name })
+        setAdmin({ email: payload.email, role: payload.role, name: payload.name ?? '' })
       }
     }
     setIsLoading(false)
@@ -43,22 +43,26 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string
   ): Promise<{ success: boolean; error?: string }> {
-    // Simulate network delay
-    await new Promise((r) => setTimeout(r, 600))
+    try {
+      const res = await fetch(`${API_URL}/auth/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
 
-    const match = ADMIN_CREDENTIALS.find(
-      (c) => c.email === email && c.password === password
-    )
+      const json = await res.json()
 
-    if (!match) {
-      return { success: false, error: 'Invalid email or password.' }
+      if (!res.ok) {
+        return { success: false, error: json.error ?? 'Login failed.' }
+      }
+
+      setAdminCookie(json.token)
+      setAdmin({ email: json.admin.email, role: json.admin.role, name: json.admin.name })
+      router.push('/admin/dashboard')
+      return { success: true }
+    } catch {
+      return { success: false, error: 'Network error. Please check your connection.' }
     }
-
-    const token = createAdminJWT(match.email, match.role)
-    setAdminCookie(token)
-    setAdmin({ email: match.email, role: match.role, name: match.name })
-    router.push('/admin/dashboard')
-    return { success: true }
   }
 
   function logout() {

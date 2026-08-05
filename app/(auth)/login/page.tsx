@@ -63,7 +63,8 @@ export default function LoginPage() {
       }
 
       // 
-      login(json.token, json.studio?.email ?? data.email, role)
+      const serverRole = json.role === 'client' ? 'client' : 'designer'
+      login(json.token, json.studio?.email ?? data.email, serverRole)
 
     } catch {
       setServerError('Network error. Please check your connection.')
