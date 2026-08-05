@@ -186,3 +186,8 @@ model ClientProfile {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
+
+model ProfileView {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+}

@@ -4,13 +4,34 @@ import { useAuth } from '@/context/AuthContext'
 import { useProfile } from '@/context/ProfileContext'
 import { useInquiry } from '@/context/InquiryContext'
 import { useBooking } from '@/context/BookingContext'
+import { useReview } from '@/context/ReviewContext'
 import { useSidebar } from '@/context/SidebarContext'
 import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import {
   Eye, Star, MessageSquare, Calendar, Bell,
   PlusCircle, Edit3, MapPin, TrendingUp, CheckCircle,
   Clock, Menu, ChevronRight, BarChart2, ArrowUpRight,
 } from 'lucide-react'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+
+function useProfileViews() {
+  const [views, setViews] = useState<{ total: number; thisWeek: number } | null>(null)
+  useEffect(() => {
+    const token =
+      document.cookie.match(/(?:^|; )auth-token=([^;]*)/)?.at(1) ??
+      document.cookie.match(/(?:^|; )client-auth-token=([^;]*)/)?.at(1)
+    if (!token) return
+    fetch(`${API_URL}/profile/views/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(setViews)
+      .catch(() => {})
+  }, [])
+  return views
+}
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   New:     { bg: 'bg-amber-100',  text: 'text-amber-700' },
@@ -25,6 +46,8 @@ export default function DashboardPage() {
   const { profile, completionPct, incompleteFields } = useProfile()
   const { inquiries } = useInquiry()
   const { bookings } = useBooking()
+  const { reviews } = useReview()
+  const profileViews = useProfileViews()
 
   const recentInquiries = inquiries.slice(0, 4)
 
@@ -46,9 +69,25 @@ export default function DashboardPage() {
   const formatNaira = (amount: number) =>
     `₦${amount.toLocaleString('en-NG')}`
 
+  const avgRating = reviews.length
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : null
+
   const stats = [
-    { label: 'Profile Views',   value: '—',                         icon: Eye,           change: 'Coming soon', up: true },
-    { label: 'Avg. Rating',     value: '—',                         icon: Star,          change: 'Coming soon', up: true },
+    {
+      label: 'Profile Views',
+      value: profileViews ? String(profileViews.total) : '—',
+      icon: Eye,
+      change: profileViews ? `${profileViews.thisWeek} this week` : 'Loading…',
+      up: true,
+    },
+    {
+      label: 'Avg. Rating',
+      value: avgRating ?? '—',
+      icon: Star,
+      change: reviews.length ? `${reviews.length} review${reviews.length !== 1 ? 's' : ''}` : 'No reviews yet',
+      up: true,
+    },
     { label: 'Inquiries',       value: String(inquiries.length),     icon: MessageSquare, change: `${inquiries.filter(i => i.status === 'New').length} new`, up: true },
     { label: 'Active Bookings', value: String(activeBookings),       icon: Calendar,      change: `${bookings.filter(b => b.status === 'pending').length} pending`, up: activeBookings > 0 },
   ]
@@ -106,7 +145,7 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold text-[#422a15]">{value}</p>
               <p className={`text-xs mt-1 font-medium flex items-center gap-0.5 ${up ? 'text-green-600' : 'text-red-500'}`}>
                 <ArrowUpRight className={`w-3 h-3 ${up ? '' : 'rotate-180'}`} />
-                {change} this week
+                {change}
               </p>
             </div>
           ))}
