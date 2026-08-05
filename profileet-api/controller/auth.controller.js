@@ -77,7 +77,6 @@ async function login(req, res) {
   }
 }
 
-// ─── Admin credentials loaded from environment (never from frontend) ──────────
 const ADMIN_ACCOUNTS = [
   {
     email:    process.env.ADMIN_SUPER_EMAIL,
@@ -137,5 +136,34 @@ function testProtected(req, res) {
   res.json({ message: "You are authenticated", userId: req.userId });
 }
 
-module.exports = { signup, login, adminLogin, testProtected };
+async function changePassword(req, res) {
+  const { currentPassword, newPassword } = req.body
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'currentPassword and newPassword are required' })
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters' })
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.userId } })
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    const matches = await bcrypt.compare(currentPassword, user.password)
+    if (!matches) {
+      return res.status(401).json({ error: 'Current password is incorrect' })
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10)
+    await prisma.user.update({ where: { id: req.userId }, data: { password: hashed } })
+
+    res.json({ success: true, message: 'Password updated successfully' })
+  } catch (error) {
+    console.error('Failed to change password:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+module.exports = { signup, login, adminLogin, changePassword, testProtected };
 
