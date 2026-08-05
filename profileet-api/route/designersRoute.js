@@ -1,9 +1,7 @@
 const express = require('express')
 const router = express.Router()
-const requireAuth = require('../middleware/auth')
+const { requireAuth, requireAnyAdmin } = require('../middleware/auth')
 const { prisma } = require('../config/db')
-
-router.use(requireAuth)
 
 function mapDesigner(d) {
   return {
@@ -11,6 +9,7 @@ function mapDesigner(d) {
     notes: d.notes ?? [],
   }
 }
+
 
 router.get('/', async (req, res) => {
   try {
@@ -39,7 +38,8 @@ router.get('/:id', async (req, res) => {
   }
 })
 
-router.patch('/:id', async (req, res) => {
+
+router.patch('/:id', requireAuth, requireAnyAdmin, async (req, res) => {
   try {
     const existing = await prisma.designer.findUnique({ where: { id: req.params.id } })
     if (!existing) return res.status(404).json({ error: 'Designer not found' })
@@ -51,7 +51,7 @@ router.patch('/:id', async (req, res) => {
         ...(req.body.email !== undefined && { email: req.body.email }),
         ...(req.body.specialty !== undefined && { specialty: req.body.specialty }),
         ...(req.body.location !== undefined && { location: req.body.location }),
-        ...(req.body.rating !== undefined && { rating: Number(req.body.rating) }),
+        ...(req.body.rating  !== undefined && { rating: Number(req.body.rating) }),
         ...(req.body.reviews !== undefined && { reviews: Number(req.body.reviews) }),
         ...(req.body.startingPrice !== undefined && { startingPrice: Number(req.body.startingPrice) }),
         ...(req.body.available !== undefined && { available: req.body.available }),
@@ -76,7 +76,8 @@ router.patch('/:id', async (req, res) => {
   }
 })
 
-router.post('/:id/notes', async (req, res) => {
+
+router.post('/:id/notes', requireAuth, requireAnyAdmin, async (req, res) => {
   const { author, role, content } = req.body
   if (!content || !content.trim()) return res.status(400).json({ error: 'Note content is required' })
 
@@ -91,7 +92,9 @@ router.post('/:id/notes', async (req, res) => {
         author: author || 'Staff',
         role: role || 'support_agent',
         content: content.trim(),
-        createdAt: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        createdAt: new Date().toLocaleDateString('en-GB', {
+          day: 'numeric', month: 'short', year: 'numeric',
+        }),
       },
     })
 

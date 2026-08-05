@@ -1,9 +1,9 @@
 const express = require('express')
 const router = express.Router()
-const requireAuth = require('../middleware/auth')
+const { requireAuth, requireRole } = require('../middleware/auth')
 const { prisma } = require('../config/db')
 
-router.use(requireAuth)
+router.use(requireAuth, requireRole('designer'))
 
 router.get('/', async (req, res) => {
   try {
@@ -81,8 +81,8 @@ router.patch('/:id', async (req, res) => {
     const updated = await prisma.portfolioItem.update({
       where: { id },
       data: {
-        ...(title       !== undefined && { title }),
-        ...(tag         !== undefined && { tag }),
+        ...(title  !== undefined && { title }),
+        ...(tag  !== undefined && { tag }),
         ...(description !== undefined && { description }),
       },
     })

@@ -1,11 +1,11 @@
 const express = require('express')
 const router = express.Router()
-const requireAuth = require('../middleware/auth')
+const { requireAuth, requireRole } = require('../middleware/auth')
 const { prisma } = require('../config/db')
 
 const PROFILE_ID = 1
 
-router.use(requireAuth)
+router.use(requireAuth, requireRole('designer'))
 
 
 router.get('/', async (req, res) => {

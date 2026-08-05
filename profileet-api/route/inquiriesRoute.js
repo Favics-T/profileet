@@ -1,11 +1,11 @@
 const express = require('express')
 const router = express.Router()
-const requireAuth = require('../middleware/auth')
+const { requireAuth, requireRole } = require('../middleware/auth')
 const { prisma } = require('../config/db')
 
 const VALID_STATUSES = ['New', 'Replied', 'Booked']
 
-router.use(requireAuth)
+router.use(requireAuth, requireRole('designer'))
 
 
 router.get('/', async (req, res) => {

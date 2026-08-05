@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { prisma } = require('../config/db')
-const requireAuth = require('../middleware/auth')
+const { requireAuth, requireRole } = require('../middleware/auth')
 
 
 router.post('/', async (req, res) => {
@@ -17,7 +17,7 @@ router.post('/', async (req, res) => {
 
 
 
-router.get('/stats', requireAuth, async (req, res) => {
+router.get('/stats', requireAuth, requireRole('designer'), async (req, res) => {
   try {
     const now = new Date()
     const startOfWeek = new Date(now)
