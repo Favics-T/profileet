@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { authHeader } from '@/lib/auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
@@ -43,7 +44,9 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API_URL}/reviews`)
+      const res = await fetch(`${API_URL}/reviews`, {
+        headers: { ...authHeader() },
+      })
       if (!res.ok) throw new Error(`Failed to fetch reviews: ${res.status}`)
       const data: Review[] = await res.json()
       setReviews(data)
@@ -67,7 +70,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/reviews/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({ reply: text.trim() }),
       })
       if (!res.ok) throw new Error('Failed to save reply')
@@ -91,7 +94,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/reviews/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({ incrementHelpful: true }),
       })
       if (!res.ok) throw new Error('Failed to mark helpful')

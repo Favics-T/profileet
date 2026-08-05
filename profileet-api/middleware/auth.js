@@ -1,4 +1,4 @@
-    import jwt from 'jsonwebtoken'
+const jwt = require('jsonwebtoken')
 
 function requireAuth(req,res,next){
     const authHeader = req.headers.authorization;
@@ -12,7 +12,7 @@ function requireAuth(req,res,next){
 
     try{
         const payload = jwt.verify(token, process.env.JWT_SECRET);
-        req.userId = payload.studioId;
+        req.userId = payload.userId;
         next();
     }
     catch(err){

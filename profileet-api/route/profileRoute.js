@@ -1,9 +1,11 @@
 const express = require('express')
 const router = express.Router()
+const requireAuth = require('../middleware/auth')
 const { prisma } = require('../config/db')
 
-
 const PROFILE_ID = 1
+
+router.use(requireAuth)
 
 
 router.get('/', async (req, res) => {

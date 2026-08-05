@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { authHeader } from '@/lib/auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
@@ -34,7 +35,9 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API_URL}/portfolio`)
+      const res = await fetch(`${API_URL}/portfolio`, {
+        headers: { ...authHeader() },
+      })
       if (!res.ok) throw new Error(`Failed to fetch portfolio: ${res.status}`)
       const data: PortfolioItem[] = await res.json()
       setItems(data)
@@ -57,7 +60,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/portfolio`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify(newItems),
       })
       if (!res.ok) throw new Error('Failed to save portfolio items')
@@ -74,7 +77,10 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
  
     setItems(prev => prev.filter(item => item.id !== id))
     try {
-      const res = await fetch(`${API_URL}/portfolio/${id}`, { method: 'DELETE' })
+      const res = await fetch(`${API_URL}/portfolio/${id}`, {
+        method: 'DELETE',
+        headers: { ...authHeader() },
+      })
       if (!res.ok) throw new Error('Failed to delete portfolio item')
     } catch (err) {
     

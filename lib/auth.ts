@@ -2,12 +2,11 @@ import { AdminRole, User } from '@/type/index'
 
 const EXPIRES_IN = 86400 // 24 hours
 
-// ─── Cookie names ──────────────────────────────────────────────────────────
 export const TOKEN_COOKIE        = 'auth-token'         // designer
-export const CLIENT_AUTH_TOKEN   = 'client-auth-token'  // client
-export const ADMIN_TOKEN_COOKIE  = 'admin-auth-token'   // admin
+export const CLIENT_AUTH_TOKEN   = 'client-auth-token'  
+export const ADMIN_TOKEN_COOKIE  = 'admin-auth-token'   
 
-// ─── Designer / Client JWT ─────────────────────────────────────────────────
+
 
 export function createJWT(email: string, role: 'designer' | 'client'): string {
   const header  = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
@@ -39,28 +38,33 @@ export function isTokenValid(token: string): boolean {
   return payload.exp > Math.floor(Date.now() / 1000)
 }
 
-// ─── Role-aware cookie helpers ─────────────────────────────────────────────
 
-// Writes to the correct cookie based on role
 export function setAuthCookie(token: string, role: 'designer' | 'client'): void {
   const cookieName = role === 'client' ? CLIENT_AUTH_TOKEN : TOKEN_COOKIE
   document.cookie = `${cookieName}=${token}; path=/; max-age=${EXPIRES_IN}; SameSite=Strict`
 }
 
-// Removes both designer and client cookies on logout
+
 export function removeAuthCookie(): void {
   document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0`
   document.cookie = `${CLIENT_AUTH_TOKEN}=; path=/; max-age=0`
 }
 
-// Reads from a specific cookie by name
+
 export function getTokenFromCookie(cookieName: string = TOKEN_COOKIE): string | null {
   if (typeof document === 'undefined') return null
   const match = document.cookie.match(new RegExp(`(?:^|; )${cookieName}=([^;]*)`))
   return match ? decodeURIComponent(match[1]) : null
 }
 
-// ─── Admin JWT ────────────────────────────────────────────────────────────
+
+export function authHeader(): { Authorization: string } | Record<string, never> {
+  const token =
+    getTokenFromCookie(TOKEN_COOKIE) ??
+    getTokenFromCookie(CLIENT_AUTH_TOKEN)
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 
 export const ADMIN_CREDENTIALS: {
   email: string

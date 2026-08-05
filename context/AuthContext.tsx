@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   function login(token: string, email: string, role: 'designer' | 'client') {
-    setAuthCookie(token, role)         // writes to correct cookie per role
+    setAuthCookie(token, role)         
     setUser({ email, role })
 
     if (role === 'client') {
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
-    removeAuthCookie()   // clears both auth-token and client-auth-token
+    removeAuthCookie()   
     setUser(null)
     router.push('/login')
   }

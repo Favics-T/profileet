@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { DesignerProfile } from '@/type/index'
+import { authHeader } from '@/lib/auth'
 
 interface ProfileContextType {
   profile: DesignerProfile
@@ -63,7 +64,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       try {
         setIsLoading(true)
         setError(null)
-        const res = await fetch(`${API_URL}/profile`)
+        const res = await fetch(`${API_URL}/profile`, {
+          headers: { ...authHeader() },
+        })
         if (!res.ok) throw new Error(`Failed to load profile (${res.status})`)
         const data = await res.json()
 
@@ -79,10 +82,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         }
 
         setProfile(loaded)
-        // Keep localStorage in sync as a local cache
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded)) } catch { /* ignore */ }
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded)) } 
+                catch { /* ignore */ }
       } catch (err) {
-        // API unavailable — fall back to cached localStorage data
+       
         try {
           const stored = localStorage.getItem(STORAGE_KEY)
           if (stored) setProfile({ ...defaultProfile, ...JSON.parse(stored) })
@@ -95,9 +98,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     fetchProfile()
   }, [])
 
-  // ─── Save changes to API (and keep localStorage in sync) ──────────────────
+  
   async function updateProfile(data: Partial<DesignerProfile>) {
-    // Optimistic local update
+    
     const previous = profile
     const next = { ...profile, ...data }
     setProfile(next)
@@ -106,12 +109,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/profile`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify(data),
       })
       if (!res.ok) throw new Error(`Failed to save profile (${res.status})`)
       const saved = await res.json()
-      // Sync with whatever the server returned
+      
       setProfile({
         fullName:          saved.fullName          ?? '',
         specialty:         saved.specialty         ?? '',
@@ -122,8 +125,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         avatar:            saved.avatar            ?? null,
       })
     } catch (err) {
-      // Roll back on error
-      setProfile(previous)
+            setProfile(previous)
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(previous)) } catch { /* ignore */ }
       setError(err instanceof Error ? err.message : 'Failed to save profile')
       throw err

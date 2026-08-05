@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { Inquiry, InquiryStatus } from '@/type/index'
+import { authHeader } from '@/lib/auth'
 
 interface InquiryContextType {
   inquiries: Inquiry[]
@@ -28,7 +29,9 @@ export function InquiryProvider({ children }: { children: ReactNode }) {
       try {
         setIsLoading(true)
         setError(null)
-        const res = await fetch(`${API_URL}/inquiries`)
+        const res = await fetch(`${API_URL}/inquiries`, {
+          headers: { ...authHeader() },
+        })
         if (!res.ok) throw new Error(`Request failed (${res.status})`)
         const data: Inquiry[] = await res.json()
         setInquiries(data)
@@ -53,7 +56,7 @@ export function InquiryProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/inquiries/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({ status }),
       })
       if (!res.ok) throw new Error(`Update failed (${res.status})`)

@@ -1,6 +1,9 @@
 const express = require('express')
 const router = express.Router()
+const requireAuth = require('../middleware/auth')
 const { prisma } = require('../config/db')
+
+router.use(requireAuth)
 
 function mapDesigner(d) {
   return {

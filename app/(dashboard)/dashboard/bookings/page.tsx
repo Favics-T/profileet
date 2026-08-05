@@ -363,7 +363,7 @@ export default function DesignerBookingsPage() {
   )
 }
 
-/* ─── ADD BOOKING MODAL ──────────────────────────────────────────────────────*/
+
 function AddBookingModal({ onClose, onSave }: {
   onClose: () => void
   onSave: (data: NewBookingPayload) => Promise<void>
@@ -600,7 +600,7 @@ function AddBookingModal({ onClose, onSave }: {
   )
 }
 
-/* ─── DETAIL PANEL ────────────────────────────────────────────────────────────*/
+
 function DetailPanel({
   booking, onBack, onAccept, onCancel, onComplete, onConfirmConsult, onRequestPayment, onDelete, toggle,
 }: {

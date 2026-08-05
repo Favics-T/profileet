@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { BookingStatus, Measurement, Consultation, BookingRequest } from '@/type/booking'
+import { authHeader } from '@/lib/auth'
 
 
 export interface NewBookingPayload {
@@ -38,9 +39,8 @@ interface BookingContextType {
   applyAction: (id: string, action: 'accept' | 'cancel' | 'complete') => void
   confirmConsult: (id: string) => void
   markDepositPaid: (id: string) => void
-  /** Add a brand-new booking via POST /bookings */
-  addBooking: (data: NewBookingPayload) => Promise<void>
-  /** Delete a booking via DELETE /bookings/:id */
+    addBooking: (data: NewBookingPayload) => Promise<void>
+  
   deleteBooking: (id: string) => Promise<void>
   counts: Record<BookingStatus, number>
   pendingCount: number
@@ -68,7 +68,9 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       try {
         setIsLoading(true)
         setError(null)
-        const res = await fetch(`${API_URL}/bookings`)
+        const res = await fetch(`${API_URL}/bookings`, {
+          headers: { ...authHeader() },
+        })
         if (!res.ok) throw new Error(`Request failed (${res.status})`)
         const data: BookingRequest[] = await res.json()
         setBookings(data)
@@ -102,7 +104,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   const applyAction = async (id: string, action: 'accept' | 'cancel' | 'complete') => {
     const next: BookingStatus = action === 'accept' ? 'accepted' : action === 'cancel' ? 'cancelled' : 'completed'
 
-    // Optimistic update
+    
     const previous = bookings
     setBookings(prev => prev.map(b => (b.id !== id ? b : { ...b, status: next })))
     if (selected?.id === id) setSelected(prev => (prev ? { ...prev, status: next } : null))
@@ -111,12 +113,12 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/bookings/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({ status: next }),
       })
       if (!res.ok) throw new Error(`Update failed (${res.status})`)
     } catch (err) {
-      // Roll back on error
+     
       setBookings(previous)
       if (selected?.id === id) setSelected(previous.find(b => b.id === id) ?? null)
       setError(err instanceof Error ? err.message : 'Failed to update booking')
@@ -125,7 +127,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
 
   
   const confirmConsult = async (id: string) => {
-    // Optimistic update
+    
     const previous = bookings
     const updatedConsult = { status: 'confirmed' as const }
     setBookings(prev => prev.map(b =>
@@ -137,7 +139,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/bookings/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({ consultation: updatedConsult }),
       })
       if (!res.ok) throw new Error(`Update failed (${res.status})`)
@@ -150,7 +152,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
 
  
   const markDepositPaid = async (id: string) => {
-    // Optimistic update
+    
     const previous = bookings
     setBookings(prev => prev.map(b => (b.id !== id ? b : { ...b, depositPaid: true })))
     if (selected?.id === id) setSelected(prev => (prev ? { ...prev, depositPaid: true } : null))
@@ -159,7 +161,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/bookings/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({ depositPaid: true }),
       })
       if (!res.ok) throw new Error(`Update failed (${res.status})`)
@@ -175,7 +177,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/bookings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify(data),
       })
       if (!res.ok) throw new Error(`Create failed (${res.status})`)
@@ -183,19 +185,22 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       setBookings(prev => [created, ...prev])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create booking')
-      throw err // re-throw so the form can handle it
+      throw err 
     }
   }
 
 
   const deleteBooking = async (id: string) => {
-    // Optimistic update
+    
     const previous = bookings
     setBookings(prev => prev.filter(b => b.id !== id))
     if (selected?.id === id) setSelected(null)
 
     try {
-      const res = await fetch(`${API_URL}/bookings/${id}`, { method: 'DELETE' })
+      const res = await fetch(`${API_URL}/bookings/${id}`, {
+        method: 'DELETE',
+        headers: { ...authHeader() },
+      })
       if (!res.ok) throw new Error(`Delete failed (${res.status})`)
     } catch (err) {
       setBookings(previous)

@@ -1,20 +1,9 @@
 const express = require('express')
 const router = express.Router()
+const requireAuth = require('../middleware/auth')
 const { prisma } = require('../config/db')
 
-const VALID_STATUSES = ['pending', 'accepted', 'in_progress', 'completed', 'cancelled']
-
-const toInitials = (name = '') =>
-  name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('')
-
-const COLOURS = ['#be185d', '#0ea5e9', '#7c3aed', '#16a34a', '#d97706', '#0891b2', '#dc2626', '#059669']
-const randomColour = () => COLOURS[Math.floor(Math.random() * COLOURS.length)]
-
-
+router.use(requireAuth)
 
 router.get('/', async (req, res) => {
   try {
@@ -28,7 +17,6 @@ router.get('/', async (req, res) => {
   }
 })
 
-
 router.get('/:id', async (req, res) => {
   try {
     const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
@@ -40,7 +28,18 @@ router.get('/:id', async (req, res) => {
   }
 })
 
- 
+const VALID_STATUSES = ['pending', 'accepted', 'in_progress', 'completed', 'cancelled']
+
+const toInitials = (name = '') =>
+  name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
+
+const COLOURS = ['#be185d', '#0ea5e9', '#7c3aed', '#16a34a', '#d97706', '#0891b2', '#dc2626', '#059669']
+const randomColour = () => COLOURS[Math.floor(Math.random() * COLOURS.length)]
+
 router.post('/', async (req, res) => {
   const {
     client,
@@ -67,7 +66,6 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    
     const newBooking = await prisma.booking.create({
       data: {
         client,
@@ -122,7 +120,6 @@ router.patch('/:id', async (req, res) => {
       measurements,
     } = req.body
 
-    
     if (status !== undefined && !VALID_STATUSES.includes(status)) {
       return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` })
     }
@@ -175,10 +172,10 @@ router.put('/:id', async (req, res) => {
       where: { id },
       data: {
         ...req.body,
-        id,                                     
+        id,
         initials: toInitials(req.body.client ?? existing.client),
-        clientColor: existing.clientColor,      
-        receivedAt: existing.receivedAt,        
+        clientColor: existing.clientColor,
+        receivedAt: existing.receivedAt,
       },
     })
 
@@ -188,7 +185,6 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to replace booking' })
   }
 })
-
 
 router.delete('/:id', async (req, res) => {
   try {
