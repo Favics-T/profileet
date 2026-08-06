@@ -9,8 +9,8 @@ import { useSidebar } from '@/context/SidebarContext'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import {
-  Eye, Star, MessageSquare, Calendar, Bell,
-  PlusCircle, Edit3, MapPin, TrendingUp, CheckCircle,
+  UserRound, Star, MessageSquare, Calendar, Bell,
+  PlusCircle, Edit3, MapPin, TrendingUp, CheckCircle,Eye,
   Clock, Menu, ChevronRight, BarChart2, ArrowUpRight,
 } from 'lucide-react'
 
@@ -51,7 +51,7 @@ export default function DashboardPage() {
 
   const recentInquiries = inquiries.slice(0, 4)
 
-  // ── Computed stats from real data ────────────────────────────────────────
+  
   const activeBookings = bookings.filter(
     (b) => b.status === 'accepted' || b.status === 'in_progress' || b.status === 'pending'
   ).length
@@ -109,7 +109,7 @@ export default function DashboardPage() {
           </button>
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-bold text-[#422a15] truncate">
-              Welcome back, {displayName} 👋
+              Welcome back, {displayName} 
             </h1>
             <p className="text-xs text-gray-400 hidden sm:block">
               Here&apos;s what&apos;s happening with your profile today
@@ -123,9 +123,10 @@ export default function DashboardPage() {
           </button>
           <button
             onClick={() => router.push('/designer/preview')}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 rounded-full hover:bg-amber-100 transition-colors"
+            className="hidden cursor-pointer text-gray-500 sm:flex items-center gap-1.5 text-xs font-semibold  "
           >
-            <Eye className="w-3.5 h-3.5" /> View Profile
+          
+            <UserRound className="w-5 h-5" /> 
           </button>
         </div>
       </header>

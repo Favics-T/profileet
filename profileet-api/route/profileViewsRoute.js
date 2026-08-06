@@ -3,7 +3,6 @@ const router = express.Router()
 const { prisma } = require('../config/db')
 const { requireAuth, requireRole } = require('../middleware/auth')
 
-
 router.post('/', async (req, res) => {
   try {
     await prisma.profileView.create({ data: {} })
@@ -13,9 +12,6 @@ router.post('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to record view' })
   }
 })
-
-
-
 
 router.get('/stats', requireAuth, requireRole('designer'), async (req, res) => {
   try {

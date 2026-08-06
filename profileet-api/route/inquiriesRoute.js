@@ -7,7 +7,6 @@ const VALID_STATUSES = ['New', 'Replied', 'Booked']
 
 router.use(requireAuth, requireRole('designer'))
 
-
 router.get('/', async (req, res) => {
   try {
     const inquiries = await prisma.inquiry.findMany({
@@ -31,7 +30,6 @@ router.get('/:id', async (req, res) => {
   }
 })
 
- 
 router.patch('/:id', async (req, res) => {
   try {
     const inquiry = await prisma.inquiry.findUnique({ where: { id: req.params.id } })

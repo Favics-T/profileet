@@ -8,12 +8,10 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 router.use(requireAuth, requireDesigner)
 
- 
 router.get('/weekdays', (req, res) => {
   res.json(WEEKDAYS)
 })
 
- 
 router.get('/', async (req, res) => {
   try {
     const rows = await prisma.availability.findMany()
@@ -29,7 +27,6 @@ router.get('/', async (req, res) => {
   }
 })
 
-
 router.get('/:date', async (req, res) => {
   try {
     const row = await prisma.availability.findUnique({ where: { date: req.params.date } })
@@ -42,7 +39,6 @@ router.get('/:date', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch availability for date' })
   }
 })
-
 
 router.post('/', async (req, res) => {
   const entries = Array.isArray(req.body) ? req.body : [req.body]
@@ -83,7 +79,6 @@ router.post('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to update availability' })
   }
 })
-
 
 router.delete('/:date', async (req, res) => {
   try {

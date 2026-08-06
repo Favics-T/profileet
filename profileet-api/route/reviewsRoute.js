@@ -7,7 +7,6 @@ const VALID_RATINGS = [1, 2, 3, 4, 5]
 
 router.use(requireAuth, requireRole('designer'))
 
-
 router.get('/', async (req, res) => {
   try {
     const reviews = await prisma.review.findMany({
@@ -30,7 +29,6 @@ router.get('/:id', async (req, res) => {
   }
 })
 
-
 router.post('/', async (req, res) => {
   const { client, initials, color, service, rating, date, text, bookingId } = req.body
 
@@ -38,7 +36,7 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'client, service, text, and rating are required' })
   }
   if (!VALID_RATINGS.includes(Number(rating))) {
-    return res.status(400).json({ error: 'rating must be 1–5' })
+    return res.status(400).json({ error: 'rating must be 1-5' })
   }
 
   try {
@@ -61,7 +59,6 @@ router.post('/', async (req, res) => {
   }
 })
 
-
 router.patch('/:id', async (req, res) => {
   const { id } = req.params
   const { reply, incrementHelpful } = req.body
@@ -72,7 +69,6 @@ router.patch('/:id', async (req, res) => {
 
     const data = {}
 
-    
     if (reply !== undefined) {
       if (typeof reply !== 'string' || !reply.trim()) {
         return res.status(400).json({ error: 'reply must be a non-empty string' })
@@ -81,13 +77,12 @@ router.patch('/:id', async (req, res) => {
       data.replied = true
     }
 
-    
     if (incrementHelpful === true) {
       data.helpful = existing.helpful + 1
     }
 
     if (Object.keys(data).length === 0) {
-      return res.status(400).json({ error: 'Nothing to update — send reply or incrementHelpful' })
+      return res.status(400).json({ error: 'Nothing to update - send reply or incrementHelpful' })
     }
 
     const updated = await prisma.review.update({ where: { id }, data })
@@ -97,7 +92,6 @@ router.patch('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to update review' })
   }
 })
-
 
 router.delete('/:id', async (req, res) => {
   try {

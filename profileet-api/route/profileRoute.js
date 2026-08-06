@@ -7,7 +7,6 @@ const PROFILE_ID = 1
 
 router.use(requireAuth, requireRole('designer'))
 
-
 router.get('/', async (req, res) => {
   try {
     let profile = await prisma.designerProfile.findUnique({ where: { id: PROFILE_ID } })
@@ -25,7 +24,6 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch profile' })
   }
 })
-
 
 router.patch('/', async (req, res) => {
   const { fullName, specialty, location, bio, phone, yearsOfExperience, avatar } = req.body

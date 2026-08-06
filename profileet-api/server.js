@@ -2,6 +2,8 @@ const path = require('path')
 require('dotenv').config({ path: path.resolve(__dirname, '.env') })
 const express = require('express')
 const cors = require('cors')
+const swaggerUi = require('swagger-ui-express')
+const swaggerSpec = require('./docs/openapi')
 const { connectDB, disconnectDB } = require('./config/db')
 
 // routes
@@ -21,6 +23,9 @@ const app = express()
 
 app.use(cors())          
 app.use(express.json())  
+
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 // routes 
 app.use('/inquiries',      inquiriesRoute)
@@ -51,6 +56,7 @@ const PORT = process.env.PORT || 4000
 connectDB().then(() => {
   const server = app.listen(PORT, () => {
     console.log(` API running on http://localhost:${PORT}`)
+    console.log(` Swagger docs on http://localhost:${PORT}/api-docs`)
   })
 
   // Handle unhandled promise rejections

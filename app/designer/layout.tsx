@@ -1,9 +1,15 @@
 import { ProfileProvider } from '@/context/ProfileContext'
+import { PortfolioProvider } from '@/context/PortfolioContext'
+import { ReviewProvider } from '@/context/ReviewContext'
 
 export default function DesignerLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProfileProvider>
-      {children}
+      <PortfolioProvider>
+        <ReviewProvider>
+          {children}
+        </ReviewProvider>
+      </PortfolioProvider>
     </ProfileProvider>
   )
 }
