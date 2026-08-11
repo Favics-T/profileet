@@ -40,8 +40,6 @@ export const useAvailability = () => {
       setLoading(false)
     }
   }, [])
-
- 
   const saveDay = useCallback(async (date: string, status: DayStatus) => {
     
     setDayStatuses(prev => ({ ...prev, [date]: status }))
@@ -63,10 +61,7 @@ export const useAvailability = () => {
       setError(err instanceof Error ? err.message : 'Failed to save availability')
     }
   }, [])
-
-   
   const clearDay = useCallback(async (date: string) => {
-    
     const previous = dayStatuses
     setDayStatuses(prev => {
       const next = { ...prev }
@@ -82,8 +77,6 @@ export const useAvailability = () => {
       setError(err instanceof Error ? err.message : 'Failed to clear availability')
     }
   }, [dayStatuses])
-
-  
   useEffect(() => {
     getWeekdays()
     fetchAll()
@@ -99,6 +92,4 @@ export const useAvailability = () => {
     refetch: fetchAll,
   }
 }
-
-
 export const useAvailabilty = useAvailability

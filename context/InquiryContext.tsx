@@ -66,7 +66,6 @@ export function InquiryProvider({ children }: { children: ReactNode }) {
       setError(err instanceof Error ? err.message : 'Failed to update status')
     }
   }
-
   return (
     <InquiryContext.Provider
       value={{ inquiries, filtered, filterStatus, setFilterStatus, updateStatus, isLoading, error }}
@@ -75,7 +74,6 @@ export function InquiryProvider({ children }: { children: ReactNode }) {
     </InquiryContext.Provider>
   )
 }
-
 export function useInquiry() {
   const ctx = useContext(InquiryContext)
   if (!ctx) throw new Error('useInquiry must be used within InquiryProvider')

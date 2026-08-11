@@ -12,6 +12,36 @@ async function main() {
   await prisma.designerNote.deleteMany()
   await prisma.designer.deleteMany()
   await prisma.clientProfile.deleteMany()
+  await prisma.portfolioItem.deleteMany()
+  await prisma.review.deleteMany()
+  await prisma.designerProfile.deleteMany()
+  await prisma.user.deleteMany()
+
+  const designerUser = await prisma.user.upsert({
+    where: { email: 'adaeze@example.com' },
+    update: {
+      password: 'seeded-designer-password',
+      role: 'designer',
+    },
+    create: {
+      email: 'adaeze@example.com',
+      password: 'seeded-designer-password',
+      role: 'designer',
+    },
+  })
+
+  const clientUser = await prisma.user.upsert({
+    where: { email: 'ada.obi@example.com' },
+    update: {
+      password: 'seeded-client-password',
+      role: 'client',
+    },
+    create: {
+      email: 'ada.obi@example.com',
+      password: 'seeded-client-password',
+      role: 'client',
+    },
+  })
   
 
   const bookings = [
@@ -144,7 +174,13 @@ async function main() {
   ]
 
   for (const booking of bookings) {
-    await prisma.booking.create({ data: booking })
+    await prisma.booking.create({
+      data: {
+        ...booking,
+        designerId: designerUser.id,
+        clientId: null,
+      },
+    })
   }
   console.log(`  ${bookings.length} bookings seeded`)
 
@@ -174,13 +210,17 @@ async function main() {
   ]
 
   for (const inquiry of inquiries) {
-    await prisma.inquiry.create({ data: inquiry })
+    await prisma.inquiry.create({
+      data: {
+        ...inquiry,
+        designerId: designerUser.id,
+        clientId: null,
+      },
+    })
   }
   console.log(`   ${inquiries.length} inquiries seeded`)
 
   
-  await prisma.review.deleteMany()
-
   const reviews = [
     {
       client: 'Amara Obi',
@@ -234,7 +274,12 @@ async function main() {
   ]
 
   for (const review of reviews) {
-    await prisma.review.create({ data: review })
+    await prisma.review.create({
+      data: {
+        ...review,
+        designerId: designerUser.id,
+      },
+    })
   }
   console.log(`   ${reviews.length} reviews seeded`)
 
@@ -266,7 +311,8 @@ async function main() {
   await prisma.messageConversation.create({
     data: {
       id: 1,
-      designerId: '1',
+      directoryDesignerId: '1',
+      designerId: designerUser.id,
       designerName: 'Adaeze Nwosu',
       initials: 'AN',
       color: '#FF6500',
@@ -283,7 +329,7 @@ async function main() {
   })
 
   await prisma.clientProfile.create({
-    data: { id: 1, firstName: 'Ada', lastName: 'Obi', email: 'ada.obi@example.com', phone: '08012345678', location: 'Lagos, Nigeria', bio: 'I love beautifully made clothes and easy communication with designers.' },
+    data: { id: 1, clientId: clientUser.id, firstName: 'Ada', lastName: 'Obi', email: 'ada.obi@example.com', phone: '08012345678', location: 'Lagos, Nigeria', bio: 'I love beautifully made clothes and easy communication with designers.' },
   })
 
   console.log(' Seeding complete!')

@@ -1,5 +1,4 @@
 import { DayStatus } from '@/type/index'
-import { useCallback, useEffect, useState } from 'react'
 
 
 export const DAY_STATUS: Record<DayStatus, { label: string; bg: string; text: string; border: string }> = {

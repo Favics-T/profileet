@@ -11,14 +11,16 @@ datasource db {
 }
 
 model DesignerProfile {
-  id                Int @id
+  id                Int      @id
+  designerId        String   @unique
+  designer          User     @relation(fields: [designerId], references: [id], onDelete: Cascade)
   fullName          String   @default("")
   specialty         String   @default("")
   location          String   @default("")
   bio               String   @default("")
   phone             String   @default("")
   yearsOfExperience Int      @default(0)
-  avatar            String?  
+  avatar            String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
@@ -26,6 +28,10 @@ model DesignerProfile {
 
 model Booking {
   id             String   @id @default(cuid())
+  designerId     String
+  designer       User     @relation("BookingDesigner", fields: [designerId], references: [id], onDelete: Cascade)
+  clientId       String?
+  clientUser     User?    @relation("BookingClient", fields: [clientId], references: [id], onDelete: SetNull)
   client         String
   initials       String
   clientColor    String
@@ -53,10 +59,14 @@ model Booking {
  
 model Inquiry {
   id        String   @id @default(cuid())
+  designerId String
+  designer  User     @relation("InquiryDesigner", fields: [designerId], references: [id], onDelete: Cascade)
+  clientId  String?
+  clientUser User?    @relation("InquiryClient", fields: [clientId], references: [id], onDelete: SetNull)
   client    String
   service   String
-  date      String                          
-  status    String   @default("New")       
+  date      String
+  status    String   @default("New")
   message   String
 
   createdAt DateTime @default(now())
@@ -65,43 +75,59 @@ model Inquiry {
 
 
 model Availability {
-  date   String @id                         
-  status String   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt                          
+  date        String @id
+  designerId  String
+  designer    User   @relation(fields: [designerId], references: [id], onDelete: Cascade)
+  status      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  role      String   @default("designer")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  password           String
+  role               String   @default("designer")
+  designerProfile    DesignerProfile?
+  bookingOwnerships  Booking[]         @relation("BookingDesigner")
+  bookingClients     Booking[]         @relation("BookingClient")
+  inquiryOwnerships  Inquiry[]         @relation("InquiryDesigner")
+  inquiryClients     Inquiry[]         @relation("InquiryClient")
+  availability       Availability[]
+  reviews            Review[]
+  portfolioItems     PortfolioItem[]
+  messageOwnerships  MessageConversation[]
+  clientProfile      ClientProfile?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 
 model Review {
-  id        String   @id @default(cuid())
-  client    String
-  initials  String
-  color     String
-  service   String
-  rating    Int
-  date      String
-  text      String
-  helpful   Int      @default(0)
-  replied   Boolean  @default(false)
-  reply     String?
-  bookingId String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  designerId String
+  designer   User     @relation(fields: [designerId], references: [id], onDelete: Cascade)
+  client     String
+  initials   String
+  color      String
+  service    String
+  rating     Int
+  date       String
+  text       String
+  helpful    Int      @default(0)
+  replied    Boolean  @default(false)
+  reply      String?
+  bookingId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 
 model PortfolioItem {
   id          String   @id @default(cuid())
+  designerId  String
+  designer    User     @relation(fields: [designerId], references: [id], onDelete: Cascade)
   title       String
   tag         String
   description String   @default("")
@@ -147,18 +173,20 @@ model DesignerNote {
 }
 
 model MessageConversation {
-  id          Int      @id
-  designerId  String
-  designer    Designer @relation(fields: [designerId], references: [id], onDelete: Cascade)
-  designerName String
-  initials    String
-  color       String
-  lastMessage String
-  time        String
-  unread      Int      @default(0)
-  messages    Message[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                  Int      @id
+  directoryDesignerId String
+  directoryDesigner   Designer @relation(fields: [directoryDesignerId], references: [id], onDelete: Cascade)
+  designerId          String
+  designer            User     @relation(fields: [designerId], references: [id], onDelete: Cascade)
+  designerName        String
+  initials            String
+  color               String
+  lastMessage         String
+  time                String
+  unread              Int      @default(0)
+  messages            Message[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model Message {
@@ -173,6 +201,8 @@ model Message {
 
 model ClientProfile {
   id             Int      @id
+  clientId       String   @unique
+  clientUser     User     @relation(fields: [clientId], references: [id], onDelete: Cascade)
   firstName      String   @default("")
   lastName       String   @default("")
   email          String   @default("")

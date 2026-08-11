@@ -5,6 +5,11 @@ const cors = require('cors')
 const swaggerUi = require('swagger-ui-express')
 const swaggerSpec = require('./docs/openapi')
 const { connectDB, disconnectDB } = require('./config/db')
+const { generalLimiter } = require('./middleware/rateLimiter')
+app.use(generalLimiter)
+
+
+
 
 // routes
 const inquiriesRoute     = require('./route/inquiriesRoute')
@@ -51,7 +56,7 @@ app.get('/health', (req, res) => {
 })
 
  
-const PORT = process.env.PORT || 4000
+const PORT = process.env.PORT || 3000
 
 connectDB().then(() => {
   const server = app.listen(PORT, () => {
