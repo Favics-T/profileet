@@ -8,6 +8,7 @@ router.use(requireAuth, requireRole('designer'))
 router.get('/', async (req, res) => {
   try {
     const conversations = await prisma.messageConversation.findMany({
+      where: { designerId: req.userId },
       orderBy: { id: 'asc' },
       include: { messages: true, designer: true },
     })
@@ -29,6 +30,11 @@ router.get('/', async (req, res) => {
 
 router.patch('/:id/read', async (req, res) => {
   try {
+    const existing = await prisma.messageConversation.findFirst({
+      where: { id: Number(req.params.id), designerId: req.userId },
+    })
+    if (!existing) return res.status(404).json({ error: 'Conversation not found' })
+
     const updated = await prisma.messageConversation.update({
       where: { id: Number(req.params.id) },
       data: { unread: 0 },
@@ -46,7 +52,9 @@ router.post('/:id/messages', async (req, res) => {
   if (!text || !text.trim()) return res.status(400).json({ error: 'Message text is required' })
 
   try {
-    const conversation = await prisma.messageConversation.findUnique({ where: { id: Number(req.params.id) } })
+    const conversation = await prisma.messageConversation.findFirst({
+      where: { id: Number(req.params.id), designerId: req.userId },
+    })
     if (!conversation) return res.status(404).json({ error: 'Conversation not found' })
 
     const message = await prisma.message.create({

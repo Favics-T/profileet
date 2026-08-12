@@ -8,8 +8,9 @@ router.use(requireAuth, requireRole('designer'))
 router.get('/', async (req, res) => {
   try {
     const items = await prisma.portfolioItem.findMany({
+      where: { designerId: req.userId },
       orderBy: { createdAt: 'desc' },
-            select: {
+      select: {
         id: true,
         title: true,
         tag: true,
@@ -29,7 +30,9 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const item = await prisma.portfolioItem.findUnique({ where: { id: req.params.id } })
+    const item = await prisma.portfolioItem.findFirst({
+      where: { id: req.params.id, designerId: req.userId },
+    })
     if (!item) return res.status(404).json({ error: 'Portfolio item not found' })
     res.json(item)
   } catch (err) {
@@ -54,6 +57,7 @@ router.post('/', async (req, res) => {
       items.map(item =>
         prisma.portfolioItem.create({
           data: {
+            designerId: req.userId,
             title: item.title,
             tag: item.tag || 'Other',
             description: item.description || '',
@@ -75,7 +79,9 @@ router.patch('/:id', async (req, res) => {
   const { title, tag, description } = req.body
 
   try {
-    const existing = await prisma.portfolioItem.findUnique({ where: { id } })
+    const existing = await prisma.portfolioItem.findFirst({
+      where: { id, designerId: req.userId },
+    })
     if (!existing) return res.status(404).json({ error: 'Portfolio item not found' })
 
     const updated = await prisma.portfolioItem.update({
@@ -95,7 +101,9 @@ router.patch('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const existing = await prisma.portfolioItem.findUnique({ where: { id: req.params.id } })
+    const existing = await prisma.portfolioItem.findFirst({
+      where: { id: req.params.id, designerId: req.userId },
+    })
     if (!existing) return res.status(404).json({ error: 'Portfolio item not found' })
     const deleted = await prisma.portfolioItem.delete({ where: { id: req.params.id } })
     res.json({ message: `Portfolio item ${deleted.id} deleted`, deleted })

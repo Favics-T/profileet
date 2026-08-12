@@ -3,18 +3,17 @@ const router = express.Router()
 const { requireAuth, requireRole } = require('../middleware/auth')
 const { prisma } = require('../config/db')
 
-const PROFILE_ID = 1
-
 router.use(requireAuth, requireRole('designer'))
 
 router.get('/', async (req, res) => {
   try {
-    let profile = await prisma.designerProfile.findUnique({ where: { id: PROFILE_ID } })
+    let profile = await prisma.designerProfile.findUnique({
+      where: { designerId: req.userId },
+    })
 
     if (!profile) {
-      
       profile = await prisma.designerProfile.create({
-        data: { id: PROFILE_ID },
+        data: { designerId: req.userId },
       })
     }
 
@@ -30,7 +29,7 @@ router.patch('/', async (req, res) => {
 
   try {
     const profile = await prisma.designerProfile.upsert({
-      where: { id: PROFILE_ID },
+      where: { designerId: req.userId },
       update: {
         ...(fullName !== undefined && { fullName }),
         ...(specialty !== undefined && { specialty }),
@@ -41,7 +40,7 @@ router.patch('/', async (req, res) => {
         ...(avatar !== undefined && { avatar }),
       },
       create: {
-        id: PROFILE_ID,
+        designerId: req.userId,
         fullName: fullName ?? '',
         specialty: specialty ?? '',
         location: location ?? '',
@@ -58,5 +57,15 @@ router.patch('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to update profile' })
   }
 })
+
+
+router.get('/:designerId/availability', requireAuth, async (req, res) => {
+  const { designerId } = req.params;
+  const availability = await prisma.availability.findMany({
+    where: { designerId },
+    select: { day: true, status: true }
+  });
+  res.status(200).json({ availability });
+});
 
 module.exports = router

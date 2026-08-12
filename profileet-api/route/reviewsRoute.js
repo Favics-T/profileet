@@ -10,6 +10,7 @@ router.use(requireAuth, requireRole('designer'))
 router.get('/', async (req, res) => {
   try {
     const reviews = await prisma.review.findMany({
+      where: { designerId: req.userId },
       orderBy: { createdAt: 'desc' },
     })
     res.json(reviews)
@@ -21,7 +22,9 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const review = await prisma.review.findUnique({ where: { id: req.params.id } })
+    const review = await prisma.review.findFirst({
+      where: { id: req.params.id, designerId: req.userId },
+    })
     if (!review) return res.status(404).json({ error: 'Review not found' })
     res.json(review)
   } catch (err) {
@@ -42,6 +45,7 @@ router.post('/', async (req, res) => {
   try {
     const review = await prisma.review.create({
       data: {
+        designerId: req.userId,
         client,
         initials: initials || client.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
         color: color || '#422a15',
@@ -64,7 +68,7 @@ router.patch('/:id', async (req, res) => {
   const { reply, incrementHelpful } = req.body
 
   try {
-    const existing = await prisma.review.findUnique({ where: { id } })
+    const existing = await prisma.review.findFirst({ where: { id, designerId: req.userId } })
     if (!existing) return res.status(404).json({ error: 'Review not found' })
 
     const data = {}
@@ -95,7 +99,9 @@ router.patch('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const existing = await prisma.review.findUnique({ where: { id: req.params.id } })
+    const existing = await prisma.review.findFirst({
+      where: { id: req.params.id, designerId: req.userId },
+    })
     if (!existing) return res.status(404).json({ error: 'Review not found' })
     const deleted = await prisma.review.delete({ where: { id: req.params.id } })
     res.json({ message: `Review ${deleted.id} deleted`, deleted })

@@ -75,12 +75,15 @@ model Inquiry {
 
 
 model Availability {
-  date        String @id
+  id          String   @id @default(cuid())
+  date        String
   designerId  String
-  designer    User   @relation(fields: [designerId], references: [id], onDelete: Cascade)
+  designer    User     @relation(fields: [designerId], references: [id], onDelete: Cascade)
   status      String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([designerId, date])
 }
 
 

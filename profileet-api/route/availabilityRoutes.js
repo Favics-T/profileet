@@ -14,7 +14,9 @@ router.get('/weekdays', (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const rows = await prisma.availability.findMany()
+    const rows = await prisma.availability.findMany({
+      where: { designerId: req.userId },
+    })
     
     const dayStatuses = rows.reduce((acc, row) => {
       acc[row.date] = row.status
@@ -29,7 +31,9 @@ router.get('/', async (req, res) => {
 
 router.get('/:date', async (req, res) => {
   try {
-    const row = await prisma.availability.findUnique({ where: { date: req.params.date } })
+    const row = await prisma.availability.findFirst({
+      where: { date: req.params.date, designerId: req.userId },
+    })
     if (!row) {
       return res.status(404).json({ error: `No status found for date ${req.params.date}` })
     }
@@ -57,17 +61,28 @@ router.post('/', async (req, res) => {
   }
 
   try {
-        await Promise.all(
-      entries.map((entry) =>
-        prisma.availability.upsert({
-          where: { date: entry.date },
-          update: { status: entry.status },
-          create: { date: entry.date, status: entry.status },
+    await Promise.all(
+      entries.map(async (entry) => {
+        const existing = await prisma.availability.findFirst({
+          where: { date: entry.date, designerId: req.userId },
         })
-      )
+
+        if (existing) {
+          return prisma.availability.update({
+            where: { id: existing.id },
+            data: { status: entry.status },
+          })
+        }
+
+        return prisma.availability.create({
+          data: { date: entry.date, status: entry.status, designerId: req.userId },
+        })
+      })
     )
 
-       const rows = await prisma.availability.findMany()
+       const rows = await prisma.availability.findMany({
+      where: { designerId: req.userId },
+    })
     const dayStatuses = rows.reduce((acc, row) => {
       acc[row.date] = row.status
       return acc
@@ -82,13 +97,17 @@ router.post('/', async (req, res) => {
 
 router.delete('/:date', async (req, res) => {
   try {
-    const row = await prisma.availability.findUnique({ where: { date: req.params.date } })
+    const row = await prisma.availability.findFirst({
+      where: { date: req.params.date, designerId: req.userId },
+    })
     if (!row) {
       return res.status(404).json({ error: `No status found for date ${req.params.date}` })
     }
-    await prisma.availability.delete({ where: { date: req.params.date } })
+    await prisma.availability.delete({ where: { id: row.id } })
 
-    const rows = await prisma.availability.findMany()
+    const rows = await prisma.availability.findMany({
+      where: { designerId: req.userId },
+    })
     const dayStatuses = rows.reduce((acc, r) => {
       acc[r.date] = r.status
       return acc

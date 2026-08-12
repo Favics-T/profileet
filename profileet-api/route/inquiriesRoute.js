@@ -10,6 +10,7 @@ router.use(requireAuth, requireRole('designer'))
 router.get('/', async (req, res) => {
   try {
     const inquiries = await prisma.inquiry.findMany({
+      where: { designerId: req.userId },
       orderBy: { createdAt: 'desc' },
     })
     res.json(inquiries)
@@ -21,7 +22,9 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const inquiry = await prisma.inquiry.findUnique({ where: { id: req.params.id } })
+    const inquiry = await prisma.inquiry.findFirst({
+      where: { id: req.params.id, designerId: req.userId },
+    })
     if (!inquiry) return res.status(404).json({ error: '404 not found' })
     res.json(inquiry)
   } catch (err) {
@@ -32,7 +35,9 @@ router.get('/:id', async (req, res) => {
 
 router.patch('/:id', async (req, res) => {
   try {
-    const inquiry = await prisma.inquiry.findUnique({ where: { id: req.params.id } })
+    const inquiry = await prisma.inquiry.findFirst({
+      where: { id: req.params.id, designerId: req.userId },
+    })
     if (!inquiry) return res.status(404).json({ error: 'Not found' })
 
     const { status } = req.body

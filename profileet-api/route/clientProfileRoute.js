@@ -3,16 +3,16 @@ const router = express.Router()
 const { requireAuth, requireClient } = require('../middleware/auth')
 const { prisma } = require('../config/db')
 
-const CLIENT_ID = 1
-
 router.use(requireAuth, requireClient)
 
 router.get('/', async (req, res) => {
   try {
-    let profile = await prisma.clientProfile.findUnique({ where: { id: 1 } })
+    let profile = await prisma.clientProfile.findUnique({
+      where: { clientId: req.userId },
+    })
     if (!profile) {
       profile = await prisma.clientProfile.create({
-        data: { id: 1 },
+        data: { clientId: req.userId },
       })
     }
     res.json(profile)
@@ -35,7 +35,7 @@ router.patch('/', async (req, res) => {
 
   try {
     const profile = await prisma.clientProfile.upsert({
-      where: { id: 1 },
+      where: { clientId: req.userId },
       update: {
         ...(firstName !== undefined && { firstName }),
         ...(lastName !== undefined && { lastName }),
@@ -49,7 +49,7 @@ router.patch('/', async (req, res) => {
         ...(notifications?.reminders !== undefined && { reminders: notifications.reminders }),
       },
       create: {
-        id: 1,
+        clientId: req.userId,
         firstName: firstName ?? '',
         lastName: lastName ?? '',
         email: email ?? '',

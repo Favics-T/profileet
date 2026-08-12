@@ -8,6 +8,7 @@ router.use(requireAuth, requireDesigner)
 router.get('/', async (req, res) => {
   try {
     const bookings = await prisma.booking.findMany({
+      where: { designerId: req.userId },
       orderBy: { createdAt: 'desc' },
     })
     res.json(bookings)
@@ -19,7 +20,9 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
+    const booking = await prisma.booking.findFirst({
+      where: { id: req.params.id, designerId: req.userId },
+    })
     if (!booking) return res.status(404).json({ error: 'Booking not found' })
     res.json(booking)
   } catch (err) {
@@ -68,6 +71,7 @@ router.post('/', async (req, res) => {
   try {
     const newBooking = await prisma.booking.create({
       data: {
+        designerId: req.userId,
         client,
         initials: toInitials(client),
         clientColor: randomColour(),
@@ -101,8 +105,10 @@ router.patch('/:id', async (req, res) => {
   const { id } = req.params
 
   try {
-    const existing = await prisma.booking.findUnique({ where: { id } })
-    if (!existing) return res.status(404).json({ error: 'Booking not found' })
+    const existing = await prisma.booking.findFirst({ where: { id, designerId: req.userId } })
+    if (!existing || existing.designerId !== req.userId) {
+      return res.status(404).json({ error: 'Booking not found' })
+    }
 
     const {
       status,
@@ -165,8 +171,10 @@ router.put('/:id', async (req, res) => {
   }
 
   try {
-    const existing = await prisma.booking.findUnique({ where: { id } })
-    if (!existing) return res.status(404).json({ error: 'Booking not found' })
+    const existing = await prisma.booking.findFirst({ where: { id, designerId: req.userId } })
+    if (!existing || existing.designerId !== req.userId) {
+      return res.status(404).json({ error: 'Booking not found' })
+    }
 
     const updated = await prisma.booking.update({
       where: { id },
@@ -188,8 +196,12 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
-    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    const booking = await prisma.booking.findFirst({
+      where: { id: req.params.id, designerId: req.userId },
+    })
+    if (!booking || booking.designerId !== req.userId) {
+      return res.status(404).json({ error: 'Booking not found' })
+    }
 
     const deleted = await prisma.booking.delete({ where: { id: req.params.id } })
     res.json({ message: `Booking ${deleted.id} deleted`, deleted })
