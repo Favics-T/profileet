@@ -61,11 +61,16 @@ router.patch('/', async (req, res) => {
 
 router.get('/:designerId/availability', requireAuth, async (req, res) => {
   const { designerId } = req.params;
-  const availability = await prisma.availability.findMany({
-    where: { designerId },
-    select: { day: true, status: true }
-  });
-  res.status(200).json({ availability });
+  try {
+    const availability = await prisma.availability.findMany({
+      where: { designerId },
+      select: { date: true, status: true }
+    });
+    res.status(200).json({ availability });
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Failed to fetch availability' })
+  }
 });
 
 module.exports = router

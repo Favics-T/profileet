@@ -104,6 +104,7 @@ model User {
   portfolioItems     PortfolioItem[]
   messageOwnerships  MessageConversation[]
   clientProfile      ClientProfile?
+  profileViews       ProfileView[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
@@ -224,8 +225,10 @@ model ClientProfile {
 }
 
 model ProfileView {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  designerId String
+  designer   User     @relation(fields: [designerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 }
 
 enum Role {
