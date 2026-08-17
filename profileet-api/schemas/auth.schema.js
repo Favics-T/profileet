@@ -63,9 +63,9 @@ const changePasswordSchema = z.object({
 })
 
 module.exports = {
- 
+  signupSchema,
+  artisanSchema,
   loginSchema,
   adminLoginSchema,
   changePasswordSchema,
-  artisanSchema
 }

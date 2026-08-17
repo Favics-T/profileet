@@ -22,7 +22,6 @@ async function artisanSignup(req, res) {
           email,
           password:hashedPassword,
           role:"designer",
-          location
         }
       });
 
@@ -99,11 +98,7 @@ const ADMIN_ACCOUNT =
     adminName:     process.env.ADMIN_SUPER_NAME,
     
   }
-  adminEmail = process.env.ADMIN_SUPER_EMAIL
 
-  
-bcrypt.hash("Admin", 10).then(console.log);
-  
 
 async function adminLogin(req, res) {
 

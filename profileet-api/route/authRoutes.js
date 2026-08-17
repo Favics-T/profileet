@@ -3,14 +3,13 @@ const { requireAuth } = require("../middleware/auth");
 const { authLimiter } = require("../middleware/rateLimiter");
 const { validate } = require("../middleware/validate");
 const {
-  signupSchema,
   loginSchema,
   adminLoginSchema,
   changePasswordSchema,
+  artisanSchema,
 } = require("../schemas/auth.schema");
 const {
   artisanSignup,
-  artisanSchema,
   login,
   adminLogin,
   changePassword,
