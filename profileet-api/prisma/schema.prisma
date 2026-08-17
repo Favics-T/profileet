@@ -11,7 +11,7 @@ datasource db {
 }
 
 model DesignerProfile {
-  id                Int      @id
+  id                Int      @id @default(autoincrement())
   designerId        String   @unique
   designer          User     @relation(fields: [designerId], references: [id], onDelete: Cascade)
   fullName          String   @default("")
@@ -89,10 +89,12 @@ model Availability {
 
 model User {
   id                 String   @id @default(cuid())
+  name  String
   email              String   @unique
   password           String
   role               String   @default("designer")
   designerProfile    DesignerProfile?
+  designer           Designer?
   bookingOwnerships  Booking[]         @relation("BookingDesigner")
   bookingClients     Booking[]         @relation("BookingClient")
   inquiryOwnerships  Inquiry[]         @relation("InquiryDesigner")
@@ -140,9 +142,10 @@ model PortfolioItem {
 }
 
 model Designer {
-  id              String   @id
-  name            String
-  email           String   @unique
+  id              String   @id @default(cuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id])
+  
   specialty       String
   location        String
   rating          Float    @default(0)
@@ -166,7 +169,7 @@ model Designer {
 }
 
 model DesignerNote {
-  id         String   @id
+  id         String   @id @default(cuid())
   designerId String
   designer   Designer @relation(fields: [designerId], references: [id], onDelete: Cascade)
   author     String
@@ -176,7 +179,7 @@ model DesignerNote {
 }
 
 model MessageConversation {
-  id                  Int      @id
+  id                  Int      @id @default(autoincrement())
   directoryDesignerId String
   directoryDesigner   Designer @relation(fields: [directoryDesignerId], references: [id], onDelete: Cascade)
   designerId          String
@@ -193,7 +196,7 @@ model MessageConversation {
 }
 
 model Message {
-  id              Int      @id
+  id              Int      @id @default(autoincrement())
   conversationId  Int
   conversation    MessageConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   from            String
@@ -203,7 +206,7 @@ model Message {
 }
 
 model ClientProfile {
-  id             Int      @id
+  id             Int      @id @default(autoincrement())
   clientId       String   @unique
   clientUser     User     @relation(fields: [clientId], references: [id], onDelete: Cascade)
   firstName      String   @default("")
@@ -223,4 +226,16 @@ model ClientProfile {
 model ProfileView {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
+}
+
+enum Role {
+  client
+  designer
+  admin
+}
+
+enum DesignerStatus{
+  Pending
+  Approved
+  Rejected
 }

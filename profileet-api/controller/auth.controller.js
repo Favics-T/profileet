@@ -2,12 +2,10 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { prisma } = require("../config/db");
 
-async function signup(req, res) {
-  const { name, email, password, role } = req.body;
+async function artisanSignup(req, res) {
+  
+  const { name, email, password, specialty,location } = req.body;
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: "name, email and password are required" });
-  }
 
   try {
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -17,12 +15,32 @@ async function signup(req, res) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: { email, password: hashedPassword, role: role || "designer" },
-    });
+    const newUser = await prisma.$transaction(async(tx)=>{
+      const user = await tx.user.create({
+        data:{
+          name,
+          email,
+          password:hashedPassword,
+          role:"designer",
+          location
+        }
+      });
+
+      await tx.designer.create({
+        data:{
+          userId:user.id,
+          specialty,
+          initials: name.split(' ').map(n => n[0]).join('').toUpperCase(),
+          color:"red"
+        }
+      })
+      return user
+
+    })
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
+      { userId: newUser.id, email: newUser.email, role: 'designer'
+         },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -30,8 +48,8 @@ async function signup(req, res) {
     res.status(201).json({
       success: true,
       token,
-      role: user.role,
-      studio: { id: user.id, email: user.email },
+      role: 'designer',
+      studio: { id: newUser.id, email: newUser.email },
     });
   } catch (error) {
     console.error("Failed to sign up:", error);
@@ -40,11 +58,8 @@ async function signup(req, res) {
 }
 
 async function login(req, res) {
+  
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: "email and password are required" });
-  }
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
@@ -77,50 +92,32 @@ async function login(req, res) {
   }
 }
 
-const ADMIN_ACCOUNTS = [
+const ADMIN_ACCOUNT = 
   {
-    email:    process.env.ADMIN_SUPER_EMAIL,
-    password: process.env.ADMIN_SUPER_PASSWORD,
-    name:     process.env.ADMIN_SUPER_NAME,
-    role:     'super_admin',
-  },
-  {
-    email:    process.env.ADMIN_MANAGER_EMAIL,
-    password: process.env.ADMIN_MANAGER_PASSWORD,
-    name:     process.env.ADMIN_MANAGER_NAME,
-    role:     'profile_manager',
-  },
-  {
-    email:    process.env.ADMIN_SUPPORT_EMAIL,
-    password: process.env.ADMIN_SUPPORT_PASSWORD,
-    name:     process.env.ADMIN_SUPPORT_NAME,
-    role:     'support_agent',
-  },
-  {
-    email:    process.env.ADMIN_AUDITOR_EMAIL,
-    password: process.env.ADMIN_AUDITOR_PASSWORD,
-    name:     process.env.ADMIN_AUDITOR_NAME,
-    role:     'auditor',
-  },
-]
+    adminEmail:    process.env.ADMIN_SUPER_EMAIL,
+    adminPassword: process.env.ADMIN_SUPER_PASSWORD,
+    adminName:     process.env.ADMIN_SUPER_NAME,
+    
+  }
+  adminEmail = process.env.ADMIN_SUPER_EMAIL
+
+  
+bcrypt.hash("Admin", 10).then(console.log);
+  
 
 async function adminLogin(req, res) {
+
+  const {adminEmail, adminPassword, adminName}= ADMIN_ACCOUNT
   const { email, password } = req.body
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'email and password are required' })
+  const validateAdmin = email === adminEmail  && password === adminPassword
+  if(!validateAdmin){
+    return res.status(401).json({error:"only admin can have access"})
   }
-
-  const match = ADMIN_ACCOUNTS.find(
-    (a) => a.email === email && a.password === password
-  )
-
-  if (!match) {
-    return res.status(401).json({ error: 'Invalid admin email or password' })
-  }
+    
 
   const token = jwt.sign(
-    { userId: match.email, email: match.email, role: match.role, name: match.name },
+    {  email: adminEmail, role: 'admin', name: adminName },
     process.env.JWT_SECRET,
     { expiresIn: '24h' }
   )
@@ -128,7 +125,7 @@ async function adminLogin(req, res) {
   res.json({
     success: true,
     token,
-    admin: { email: match.email, name: match.name, role: match.role },
+    admin: { email: adminEmail, name: adminName },
   })
 }
 
@@ -137,14 +134,8 @@ function testProtected(req, res) {
 }
 
 async function changePassword(req, res) {
+  
   const { currentPassword, newPassword } = req.body
-
-  if (!currentPassword || !newPassword) {
-    return res.status(400).json({ error: 'currentPassword and newPassword are required' })
-  }
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: 'New password must be at least 6 characters' })
-  }
 
   try {
     const user = await prisma.user.findUnique({ where: { id: req.userId } })
@@ -165,5 +156,5 @@ async function changePassword(req, res) {
   }
 }
 
-module.exports = { signup, login, adminLogin, changePassword, testProtected };
+module.exports = { artisanSignup, login, adminLogin, changePassword, testProtected };
 

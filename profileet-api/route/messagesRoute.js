@@ -59,7 +59,6 @@ router.post('/:id/messages', async (req, res) => {
 
     const message = await prisma.message.create({
       data: {
-        id: Date.now(),
         conversationId: conversation.id,
         from: 'client',
         text: text.trim(),

@@ -295,22 +295,21 @@ async function main() {
   })
 
   await prisma.designerNote.create({
-    data: { id: 'n1', designerId: '2',
+    data: { designerId: '2',
        author: 'Support Agent', role: 'support_agent',
         content: 'Designer submitted all required documents. Portfolio reviewed and approved.', createdAt: 'Jun 9, 2025' },
   })
 
   await prisma.designerNote.create({
-    data: { id: 'n2', designerId: '4', author: 'Profile Manager', role: 'profile_manager', content: 'Account suspended pending investigation into client complaint about undelivered order.', createdAt: 'Jun 1, 2025' },
+    data: { designerId: '4', author: 'Profile Manager', role: 'profile_manager', content: 'Account suspended pending investigation into client complaint about undelivered order.', createdAt: 'Jun 1, 2025' },
   })
 
   await prisma.designerNote.create({
-    data: { id: 'n3', designerId: '6', author: 'Profile Manager', role: 'profile_manager', content: 'Profile rejected — portfolio does not meet minimum quality standards. Designer may reapply in 30 days.', createdAt: 'May 21, 2025' },
+    data: { designerId: '6', author: 'Profile Manager', role: 'profile_manager', content: 'Profile rejected - portfolio does not meet minimum quality standards. Designer may reapply in 30 days.', createdAt: 'May 21, 2025' },
   })
 
   await prisma.messageConversation.create({
     data: {
-      id: 1,
       directoryDesignerId: '1',
       designerId: designerUser.id,
       designerName: 'Adaeze Nwosu',
@@ -321,15 +320,15 @@ async function main() {
       unread: 2,
       messages: {
         create: [
-          { id: 1, from: 'client', text: 'Hi Adaeze, I just confirmed my booking. Looking forward to working with you!', time: 'Mon 9:00 AM' },
-          { id: 2, from: 'designer', text: "Thank you! I've received your brief. Let's schedule the first fitting for next week.", time: 'Mon 9:15 AM' },
+          { from: 'client', text: 'Hi Adaeze, I just confirmed my booking. Looking forward to working with you!', time: 'Mon 9:00 AM' },
+          { from: 'designer', text: "Thank you! I've received your brief. Let's schedule the first fitting for next week.", time: 'Mon 9:15 AM' },
         ]
       }
     }
   })
 
   await prisma.clientProfile.create({
-    data: { id: 1, clientId: clientUser.id, firstName: 'Ada', lastName: 'Obi', email: 'ada.obi@example.com', phone: '08012345678', location: 'Lagos, Nigeria', bio: 'I love beautifully made clothes and easy communication with designers.' },
+    data: { clientId: clientUser.id, firstName: 'Ada', lastName: 'Obi', email: 'ada.obi@example.com', phone: '08012345678', location: 'Lagos, Nigeria', bio: 'I love beautifully made clothes and easy communication with designers.' },
   })
 
   console.log(' Seeding complete!')

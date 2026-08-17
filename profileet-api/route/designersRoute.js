@@ -86,7 +86,6 @@ router.post('/:id/notes', requireAuth, requireRole(...ADMIN_ROLES), async (req, 
 
     const note = await prisma.designerNote.create({
       data: {
-        id: `n${Date.now()}`,
         designerId: req.params.id,
         author: author || 'Staff',
         role: role || 'support_agent',

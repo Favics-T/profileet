@@ -6,9 +6,6 @@ const swaggerUi = require('swagger-ui-express')
 const swaggerSpec = require('./docs/openapi')
 const { connectDB, disconnectDB } = require('./config/db')
 const { generalLimiter } = require('./middleware/rateLimiter')
-app.use(generalLimiter)
-
-
 
 
 // routes
@@ -26,8 +23,9 @@ const authRoutes         = require('./route/authRoutes')
 
 const app = express()
 
-app.use(cors())          
+app.use(cors({ origin: 'http://localhost:3000' }))          
 app.use(express.json())  
+app.use(generalLimiter)
 
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
@@ -56,7 +54,7 @@ app.get('/health', (req, res) => {
 })
 
  
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 5000
 
 connectDB().then(() => {
   const server = app.listen(PORT, () => {
@@ -75,6 +73,15 @@ connectDB().then(() => {
   // Graceful shutdown
   process.on('SIGTERM', () => {
     console.log('SIGTERM received, shutting down gracefully')
+    server.close(async () => {
+      await disconnectDB()
+      console.log('Process terminated')
+      process.exit(0)
+    })
+  })
+
+  process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully')
     server.close(async () => {
       await disconnectDB()
       console.log('Process terminated')

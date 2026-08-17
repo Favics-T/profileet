@@ -9,8 +9,19 @@ ALTER TABLE "MessageConversation" ALTER COLUMN "designerId" SET NOT NULL;
 ALTER TABLE "ClientProfile" ALTER COLUMN "clientId" SET NOT NULL;
 
 -- Add unique constraints only after the backfill has cleared all NULLs
-ALTER TABLE "DesignerProfile"
-  ADD CONSTRAINT "DesignerProfile_designerId_key" UNIQUE ("designerId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'DesignerProfile_designerId_key'
+  ) THEN
+    ALTER TABLE "DesignerProfile"
+      ADD CONSTRAINT "DesignerProfile_designerId_key" UNIQUE ("designerId");
+  END IF;
 
-ALTER TABLE "ClientProfile"
-  ADD CONSTRAINT "ClientProfile_clientId_key" UNIQUE ("clientId");
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'ClientProfile_clientId_key'
+  ) THEN
+    ALTER TABLE "ClientProfile"
+      ADD CONSTRAINT "ClientProfile_clientId_key" UNIQUE ("clientId");
+  END IF;
+END $$;

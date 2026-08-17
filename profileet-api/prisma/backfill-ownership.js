@@ -19,88 +19,51 @@ async function main() {
     throw new Error(`Seed client user not found: ${clientEmail}`)
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const updates = []
-
-    updates.push(
-      tx.designerProfile.updateMany({
-        where: { designerId: null },
-        data: { designerId: designerUser.id },
-      })
-    )
-
-    updates.push(tx.booking.updateMany({
-      where: { designerId: null },
-      data: { designerId: designerUser.id },
-    }))
-
-    updates.push(tx.inquiry.updateMany({
-      where: { designerId: null },
-      data: { designerId: designerUser.id },
-    }))
-
-    updates.push(tx.availability.updateMany({
-      where: { designerId: null },
-      data: { designerId: designerUser.id },
-    }))
-
-    updates.push(tx.portfolioItem.updateMany({
-      where: { designerId: null },
-      data: { designerId: designerUser.id },
-    }))
-
-    updates.push(tx.review.updateMany({
-      where: { designerId: null },
-      data: { designerId: designerUser.id },
-    }))
-
-    updates.push(tx.messageConversation.updateMany({
-      where: { designerId: null },
-      data: { designerId: designerUser.id },
-    }))
-
-    updates.push(tx.clientProfile.updateMany({
-      where: { clientId: null },
-      data: { clientId: clientUser.id },
-    }))
-
-    return Promise.all(updates)
-  })
+  const result = await prisma.$transaction([
+    prisma.$executeRawUnsafe(`UPDATE "DesignerProfile" SET "designerId" = $1 WHERE "designerId" IS NULL`, designerUser.id),
+    prisma.$executeRawUnsafe(`UPDATE "Booking" SET "designerId" = $1 WHERE "designerId" IS NULL`, designerUser.id),
+    prisma.$executeRawUnsafe(`UPDATE "Inquiry" SET "designerId" = $1 WHERE "designerId" IS NULL`, designerUser.id),
+    prisma.$executeRawUnsafe(`UPDATE "Availability" SET "designerId" = $1 WHERE "designerId" IS NULL`, designerUser.id),
+    prisma.$executeRawUnsafe(`UPDATE "PortfolioItem" SET "designerId" = $1 WHERE "designerId" IS NULL`, designerUser.id),
+    prisma.$executeRawUnsafe(`UPDATE "Review" SET "designerId" = $1 WHERE "designerId" IS NULL`, designerUser.id),
+    prisma.$executeRawUnsafe(`UPDATE "MessageConversation" SET "designerId" = $1 WHERE "designerId" IS NULL`, designerUser.id),
+    prisma.$executeRawUnsafe(`UPDATE "ClientProfile" SET "clientId" = $1 WHERE "clientId" IS NULL`, clientUser.id),
+  ])
 
   const remaining = await Promise.all([
-    prisma.designerProfile.count({ where: { designerId: null } }),
-    prisma.booking.count({ where: { designerId: null } }),
-    prisma.inquiry.count({ where: { designerId: null } }),
-    prisma.availability.count({ where: { designerId: null } }),
-    prisma.portfolioItem.count({ where: { designerId: null } }),
-    prisma.review.count({ where: { designerId: null } }),
-    prisma.messageConversation.count({ where: { designerId: null } }),
-    prisma.clientProfile.count({ where: { clientId: null } }),
+    prisma.$queryRawUnsafe(`SELECT COUNT(*)::int AS count FROM "DesignerProfile" WHERE "designerId" IS NULL`),
+    prisma.$queryRawUnsafe(`SELECT COUNT(*)::int AS count FROM "Booking" WHERE "designerId" IS NULL`),
+    prisma.$queryRawUnsafe(`SELECT COUNT(*)::int AS count FROM "Inquiry" WHERE "designerId" IS NULL`),
+    prisma.$queryRawUnsafe(`SELECT COUNT(*)::int AS count FROM "Availability" WHERE "designerId" IS NULL`),
+    prisma.$queryRawUnsafe(`SELECT COUNT(*)::int AS count FROM "PortfolioItem" WHERE "designerId" IS NULL`),
+    prisma.$queryRawUnsafe(`SELECT COUNT(*)::int AS count FROM "Review" WHERE "designerId" IS NULL`),
+    prisma.$queryRawUnsafe(`SELECT COUNT(*)::int AS count FROM "MessageConversation" WHERE "designerId" IS NULL`),
+    prisma.$queryRawUnsafe(`SELECT COUNT(*)::int AS count FROM "ClientProfile" WHERE "clientId" IS NULL`),
   ])
 
   console.log('Backfill complete')
-  console.log({
-    designerProfileUpdated: result[0].count,
-    bookingUpdated: result[1].count,
-    inquiryUpdated: result[2].count,
-    availabilityUpdated: result[3].count,
-    portfolioItemUpdated: result[4].count,
-    reviewUpdated: result[5].count,
-    messageConversationUpdated: result[6].count,
-    clientProfileUpdated: result[7].count,
+    console.log({
+    designerProfileUpdated: result[0],
+    bookingUpdated: result[1],
+    inquiryUpdated: result[2],
+    availabilityUpdated: result[3],
+    portfolioItemUpdated: result[4],
+    reviewUpdated: result[5],
+    messageConversationUpdated: result[6],
+    clientProfileUpdated: result[7],
     remainingNulls: {
-      designerProfile: remaining[0],
-      booking: remaining[1],
-      inquiry: remaining[2],
-      availability: remaining[3],
-      portfolioItem: remaining[4],
-      review: remaining[5],
-      messageConversation: remaining[6],
-      clientProfile: remaining[7],
+      designerProfile: remaining[0][0].count,
+      booking: remaining[1][0].count,
+      inquiry: remaining[2][0].count,
+      availability: remaining[3][0].count,
+      portfolioItem: remaining[4][0].count,
+      review: remaining[5][0].count,
+      messageConversation: remaining[6][0].count,
+      clientProfile: remaining[7][0].count,
     },
   })
 
-  if (remaining.some((count) => count > 0)) {
+  if (remaining.some((rows) => rows[0].count > 0)) {
     throw new Error('Backfill incomplete: some NULL ownership columns remain')
   }
 }
