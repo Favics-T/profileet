@@ -3,11 +3,26 @@ const router = express.Router()
 const { requireAuth, requireRole } = require('../middleware/auth')
 const { prisma } = require('../config/db')
 
-const ADMIN_ROLES = ['super_admin', 'profile_manager', 'support_agent', 'auditor']
+const ADMIN_ROLES = ['super_admin', 'profile_manager', 'support_agent', 'auditor', 'admin']
 
-function mapDesigner(d) {
+
+async function getReviewStats(designerUserIds) {
+  const stats = await prisma.review.groupBy({
+    by: ['designerId'],
+    where: { designerId: { in: designerUserIds } },
+    _avg: { rating: true },
+    _count: { id: true },
+  })
+  return new Map(stats.map(s => [s.designerId, { rating: s._avg.rating ?? 0, reviews: s._count.id }]))
+}
+
+function mapDesigner(d, statsMap) {
+  const stats = statsMap?.get(d.userId) ?? { rating: 0, reviews: 0 }
   return {
     ...d,
+    
+    rating: Math.round(stats.rating * 10) / 10,
+    reviews: stats.reviews,
     notes: d.notes ?? [],
   }
 }
@@ -18,7 +33,9 @@ router.get('/', async (req, res) => {
       orderBy: { createdAt: 'asc' },
       include: { notes: true },
     })
-    res.json(designers.map(mapDesigner))
+
+    const statsMap = await getReviewStats(designers.map(d => d.userId))
+    res.json(designers.map(d => mapDesigner(d, statsMap)))
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch designers' })
@@ -32,7 +49,9 @@ router.get('/:id', async (req, res) => {
       include: { notes: true },
     })
     if (!designer) return res.status(404).json({ error: 'Designer not found' })
-    res.json(mapDesigner(designer))
+
+    const statsMap = await getReviewStats([designer.userId])
+    res.json(mapDesigner(designer, statsMap))
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch designer' })
@@ -47,12 +66,8 @@ router.patch('/:id', requireAuth, requireRole(...ADMIN_ROLES), async (req, res) 
     const updated = await prisma.designer.update({
       where: { id: req.params.id },
       data: {
-        ...(req.body.name !== undefined && { name: req.body.name }),
-        ...(req.body.email !== undefined && { email: req.body.email }),
         ...(req.body.specialty !== undefined && { specialty: req.body.specialty }),
         ...(req.body.location !== undefined && { location: req.body.location }),
-        ...(req.body.rating !== undefined && { rating: Number(req.body.rating) }),
-        ...(req.body.reviews !== undefined && { reviews: Number(req.body.reviews) }),
         ...(req.body.startingPrice !== undefined && { startingPrice: Number(req.body.startingPrice) }),
         ...(req.body.available !== undefined && { available: req.body.available }),
         ...(req.body.status !== undefined && { status: req.body.status }),
@@ -60,16 +75,15 @@ router.patch('/:id', requireAuth, requireRole(...ADMIN_ROLES), async (req, res) 
         ...(req.body.bio !== undefined && { bio: req.body.bio }),
         ...(req.body.phone !== undefined && { phone: req.body.phone }),
         ...(req.body.yearsOfExperience !== undefined && { yearsOfExperience: Number(req.body.yearsOfExperience) }),
-        ...(req.body.inquiries !== undefined && { inquiries: Number(req.body.inquiries) }),
-        ...(req.body.bookings !== undefined && { bookings: Number(req.body.bookings) }),
         ...(req.body.initials !== undefined && { initials: req.body.initials }),
         ...(req.body.color !== undefined && { color: req.body.color }),
         ...(req.body.styles !== undefined && { styles: req.body.styles }),
-      },
+              },
       include: { notes: true },
     })
 
-    res.json(mapDesigner(updated))
+    const statsMap = await getReviewStats([updated.userId])
+    res.json(mapDesigner(updated, statsMap))
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to update designer' })
@@ -106,3 +120,4 @@ router.post('/:id/notes', requireAuth, requireRole(...ADMIN_ROLES), async (req, 
 })
 
 module.exports = router
+

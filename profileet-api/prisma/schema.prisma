@@ -42,7 +42,7 @@ model Booking {
   quantity       Int      @default(1)
   urgent         Boolean  @default(false)
   status         String   @default("pending")
-  receivedAt     String
+  receivedAt     DateTime @default(now())  // was String — migrated to DateTime
   price          Int
   depositPaid    Boolean  @default(false)
   depositAmount  Int
@@ -92,7 +92,7 @@ model User {
   name  String
   email              String   @unique
   password           String
-  role               String   @default("designer")
+  role               Role             @default(designer)
   designerProfile    DesignerProfile?
   designer           Designer?
   bookingOwnerships  Booking[]         @relation("BookingDesigner")
@@ -153,7 +153,7 @@ model Designer {
   reviews         Int      @default(0)
   startingPrice   Int      @default(0)
   available       Boolean  @default(true)
-  status          String   @default("Pending")
+  status          DesignerStatus @default(Pending)
   joined          String
   bio             String   @default("")
   phone           String   @default("")
@@ -237,8 +237,10 @@ enum Role {
   admin
 }
 
-enum DesignerStatus{
+enum DesignerStatus {
   Pending
   Approved
   Rejected
+  Verified
+  Active
 }

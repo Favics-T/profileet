@@ -5,9 +5,22 @@ const { prisma } = require('../config/db')
 
 const VALID_RATINGS = [1, 2, 3, 4, 5]
 
-router.use(requireAuth, requireRole('designer'))
 
-router.get('/', async (req, res) => {
+router.get('/designer/:designerId', async (req, res) => {
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { designerId: req.params.designerId },
+      orderBy: { createdAt: 'desc' },
+    })
+    res.json(reviews)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Failed to fetch reviews' })
+  }
+})
+
+
+router.get('/', requireAuth, requireRole('designer'), async (req, res) => {
   try {
     const reviews = await prisma.review.findMany({
       where: { designerId: req.userId },
@@ -20,7 +33,8 @@ router.get('/', async (req, res) => {
   }
 })
 
-router.get('/:id', async (req, res) => {
+
+router.get('/:id', requireAuth, requireRole('designer'), async (req, res) => {
   try {
     const review = await prisma.review.findFirst({
       where: { id: req.params.id, designerId: req.userId },
@@ -32,38 +46,8 @@ router.get('/:id', async (req, res) => {
   }
 })
 
-router.post('/', async (req, res) => {
-  const { client, initials, color, service, rating, date, text, bookingId } = req.body
 
-  if (!client || !service || !text || rating == null) {
-    return res.status(400).json({ error: 'client, service, text, and rating are required' })
-  }
-  if (!VALID_RATINGS.includes(Number(rating))) {
-    return res.status(400).json({ error: 'rating must be 1-5' })
-  }
-
-  try {
-    const review = await prisma.review.create({
-      data: {
-        designerId: req.userId,
-        client,
-        initials: initials || client.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
-        color: color || '#422a15',
-        service,
-        rating: Number(rating),
-        date: date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-        text,
-        bookingId: bookingId || null,
-      },
-    })
-    res.status(201).json(review)
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: 'Failed to create review' })
-  }
-})
-
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', requireAuth, requireRole('designer'), async (req, res) => {
   const { id } = req.params
   const { reply, incrementHelpful } = req.body
 
@@ -97,7 +81,8 @@ router.patch('/:id', async (req, res) => {
   }
 })
 
-router.delete('/:id', async (req, res) => {
+
+router.delete('/:id', requireAuth, requireRole('designer'), async (req, res) => {
   try {
     const existing = await prisma.review.findFirst({
       where: { id: req.params.id, designerId: req.userId },
@@ -110,4 +95,43 @@ router.delete('/:id', async (req, res) => {
   }
 })
 
+
+router.post('/:designerId', requireAuth, requireRole('client'), async (req, res) => {
+  const { designerId } = req.params
+  const { service, rating, text, bookingId, initials, color } = req.body
+
+  if (!service || !text || rating == null) {
+    return res.status(400).json({ error: 'service, text, and rating are required' })
+  }
+  if (!VALID_RATINGS.includes(Number(rating))) {
+    return res.status(400).json({ error: 'rating must be 1-5' })
+  }
+
+  try {
+    
+    const artisan = await prisma.user.findUnique({ where: { id: designerId } })
+    if (!artisan) return res.status(404).json({ error: 'Artisan not found' })
+
+    const review = await prisma.review.create({
+      data: {
+        designerId,
+        
+        client: artisan.name,
+        initials: initials || artisan.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
+        color: color || '#422a15',
+        service,
+        rating: Number(rating),
+        date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        text,
+        bookingId: bookingId || null,
+      },
+    })
+    res.status(201).json(review)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Failed to create review' })
+  }
+})
+
 module.exports = router
+

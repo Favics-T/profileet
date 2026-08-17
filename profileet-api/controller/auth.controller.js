@@ -102,17 +102,20 @@ const ADMIN_ACCOUNT =
 
 async function adminLogin(req, res) {
 
-  const {adminEmail, adminPassword, adminName}= ADMIN_ACCOUNT
+  const { adminEmail, adminPassword, adminName } = ADMIN_ACCOUNT
   const { email, password } = req.body
 
-  const validateAdmin = email === adminEmail  && password === adminPassword
-  if(!validateAdmin){
-    return res.status(401).json({error:"only admin can have access"})
+  if (email !== adminEmail) {
+    return res.status(401).json({ error: 'Only admin can have access' })
   }
-    
+
+  const passwordMatches = await bcrypt.compare(password, adminPassword)
+  if (!passwordMatches) {
+    return res.status(401).json({ error: 'Only admin can have access' })
+  }
 
   const token = jwt.sign(
-    {  email: adminEmail, role: 'admin', name: adminName },
+    { email: adminEmail, role: 'admin', name: adminName },
     process.env.JWT_SECRET,
     { expiresIn: '24h' }
   )

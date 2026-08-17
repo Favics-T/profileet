@@ -82,7 +82,7 @@ router.post('/', async (req, res) => {
         quantity: quantity ?? 1,
         urgent: urgent ?? false,
         status: 'pending',
-        receivedAt: new Date().toISOString(),
+        receivedAt: new Date(),
         price: Number(price),
         depositPaid: false,
         depositAmount: Number(depositAmount),
@@ -162,7 +162,23 @@ router.patch('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   const { id } = req.params
-  const { client, service, occasion, deliveryDate, price, depositAmount } = req.body
+  const {
+    client,
+    service,
+    occasion,
+    deliveryDate,
+    price,
+    depositAmount,
+    clientPhone,
+    quantity,
+    urgent,
+    designNotes,
+    fabrics,
+    colors,
+    inspirationRef,
+    measurements,
+    consultation,
+  } = req.body
 
   if (!client || !service || !occasion || !deliveryDate || price == null || depositAmount == null) {
     return res.status(400).json({
@@ -172,16 +188,29 @@ router.put('/:id', async (req, res) => {
 
   try {
     const existing = await prisma.booking.findFirst({ where: { id, designerId: req.userId } })
-    if (!existing || existing.designerId !== req.userId) {
-      return res.status(404).json({ error: 'Booking not found' })
-    }
+    if (!existing) return res.status(404).json({ error: 'Booking not found' })
 
     const updated = await prisma.booking.update({
       where: { id },
       data: {
-        ...req.body,
-        id,
-        initials: toInitials(req.body.client ?? existing.client),
+       
+        client,
+        initials: toInitials(client),
+        service,
+        occasion,
+        deliveryDate,
+        price: Number(price),
+        depositAmount: Number(depositAmount),
+        clientPhone: clientPhone ?? existing.clientPhone,
+        quantity: quantity != null ? Number(quantity) : existing.quantity,
+        urgent: urgent ?? existing.urgent,
+        designNotes: designNotes ?? existing.designNotes,
+        fabrics: fabrics ?? existing.fabrics,
+        colors: colors ?? existing.colors,
+        inspirationRef: inspirationRef ?? existing.inspirationRef,
+        measurements: measurements ?? existing.measurements,
+        consultation: consultation ?? existing.consultation,
+        
         clientColor: existing.clientColor,
         receivedAt: existing.receivedAt,
       },
