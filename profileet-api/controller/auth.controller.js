@@ -1,94 +1,68 @@
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const { prisma } = require("../config/db");
+const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+const { prisma } = require('../config/db')
+
+function toInitials(name = '') {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+function randomColor() {
+  return `#${Math.floor(Math.random() * 16777215)
+    .toString(16)
+    .padStart(6, '0')}`
+}
 
 async function artisanSignup(req, res) {
-  const { name, email, password, specialty, location } = req.body;
-
+  const { name, email, password, specialty, location } = req.body
 
   try {
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
-      return res.status(409).json({ error: "An account with that email already exists" });
+      return res.status(409).json({ error: 'An account with that email already exists' })
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10)
 
-    const newUser = await prisma.$transaction(async(tx)=>{
+    const newUser = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
-        data:{
-          name,
-          email,
-          password:hashedPassword,
-          role:"designer",
-        }
-      });
-
-      await tx.designer.create({
-        data:{
-          userId:user.id,
-          specialty,
-          location: location || '',
-          joined: new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
-          initials: name.split(' ').map(n => n[0]).join('').toUpperCase(),
-          color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'),
-        }
+        data: { name, email, password: hashedPassword, role: 'artisan' },
       })
-      return user
 
+      await tx.artisanProfile.create({
+        data: {
+          artisanId: user.id,
+          fullName: name,
+          specialty: specialty || '',
+          location: location || '',
+          initials: toInitials(name),
+          color: randomColor(),
+          joined: new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
+        },
+      })
+
+      return user
     })
 
     const token = jwt.sign(
-      { userId: newUser.id, email: newUser.email, role: 'designer'
-         },
+      { userId: newUser.id, email: newUser.email, role: 'artisan' },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+      { expiresIn: '7d' }
+    )
 
     res.status(201).json({
       success: true,
       token,
-      role: 'designer',
-      studio: { id: newUser.id, email: newUser.email },
-    });
+      role: 'artisan',
+      user: { id: newUser.id, email: newUser.email, name: newUser.name },
+    })
   } catch (error) {
-    console.error("Failed to sign up:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-}
-
-async function login(req, res) {
-  
-  const { email, password } = req.body;
-
-  try {
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-
-    const passwordMatches = await bcrypt.compare(password, user.password);
-
-    if (!passwordMatches) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.json({
-      success: true,
-      token,
-      role: user.role,
-      studio: { id: user.id, email: user.email },
-    });
-  } catch (error) {
-    console.error("Failed to log in:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error('Failed to sign up artisan:', error)
+    res.status(500).json({ error: 'Internal server error' })
   }
 }
 
@@ -107,7 +81,7 @@ async function clientSignup(req, res) {
       const user = await tx.user.create({
         data: { name, email, password: hashedPassword, role: 'client' },
       })
-      // Pre-create an empty ClientProfile so GET /client/profile never 404s on first load
+
       await tx.clientProfile.create({
         data: {
           clientId: user.id,
@@ -116,6 +90,7 @@ async function clientSignup(req, res) {
           email,
         },
       })
+
       return user
     })
 
@@ -137,17 +112,45 @@ async function clientSignup(req, res) {
   }
 }
 
+async function login(req, res) {
+  const { email, password } = req.body
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' })
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.password)
+    if (!passwordMatches) {
+      return res.status(401).json({ error: 'Invalid email or password' })
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    res.json({
+      success: true,
+      token,
+      role: user.role,
+      user: { id: user.id, email: user.email, name: user.name },
+    })
+  } catch (error) {
+    console.error('Failed to log in:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
 
 const ADMIN_ACCOUNT = {
-    adminEmail:    process.env.ADMIN_SUPER_EMAIL,
-    adminPassword: process.env.ADMIN_SUPER_PASSWORD,
-    adminName:     process.env.ADMIN_SUPER_NAME,
-
-  }
-
+  adminEmail: process.env.ADMIN_SUPER_EMAIL,
+  adminPassword: process.env.ADMIN_SUPER_PASSWORD,
+  adminName: process.env.ADMIN_SUPER_NAME,
+}
 
 async function adminLogin(req, res) {
-
   const { adminEmail, adminPassword, adminName } = ADMIN_ACCOUNT
   const { email, password } = req.body
 
@@ -174,11 +177,10 @@ async function adminLogin(req, res) {
 }
 
 function testProtected(req, res) {
-  res.json({ message: "You are authenticated", userId: req.userId });
+  res.json({ message: 'You are authenticated', userId: req.userId })
 }
 
 async function changePassword(req, res) {
-  
   const { currentPassword, newPassword } = req.body
 
   try {
@@ -200,5 +202,11 @@ async function changePassword(req, res) {
   }
 }
 
-module.exports = { artisanSignup, clientSignup, login, adminLogin, changePassword, testProtected };
-
+module.exports = {
+  artisanSignup,
+  clientSignup,
+  login,
+  adminLogin,
+  changePassword,
+  testProtected,
+}

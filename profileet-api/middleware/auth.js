@@ -18,14 +18,15 @@ function requireAuth(req, res, next) {
     return res.status(401).json({ error: 'Invalid or expired token' })
   }
 }
-
-function requireDesigner(req, res, next) {
-  
-  if (req.role !== 'designer') {
+function requireArtisan(req, res, next) {
+  if (req.role !== 'artisan') {
     return res.status(403).json({ error: 'Forbidden' })
   }
   next()
 }
+
+// protecting my old routes that still use requireDesigner working
+const requireDesigner = requireArtisan
 
 function requireClient(req, res, next) {
   if (req.role !== 'client') {
@@ -33,7 +34,6 @@ function requireClient(req, res, next) {
   }
   next()
 }
-
 
 function requireRole(...allowedRoles) {
   return function (req, res, next) {
@@ -44,4 +44,4 @@ function requireRole(...allowedRoles) {
   }
 }
 
-module.exports = { requireAuth, requireDesigner, requireClient, requireRole }
+module.exports = { requireAuth, requireArtisan, requireDesigner, requireClient, requireRole }

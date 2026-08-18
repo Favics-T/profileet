@@ -8,8 +8,8 @@ module.exports = {
     version: '1.0.0',
     description: `
 ## Overview
-Profileet is a fashion-designer management platform. This API powers
-designer profiles, bookings, availability, portfolios, reviews, inquiries,
+Profileet is a fashion-artisan management platform. This API powers
+artisan profiles, bookings, availability, portfolios, reviews, inquiries,
 and messaging.
 
 ## Authentication
@@ -21,10 +21,10 @@ Authorization: Bearer <token>
 \`\`\`
 
 Some endpoints are **role-restricted**:
-- \`designer\` – logged-in designers only
+- \`artisan\` – logged-in artisans only
 - \`admin\` – one of: \`super_admin\`, \`profile_manager\`, \`support_agent\`, \`auditor\`
 
-A handful of endpoints (\`GET /designers\`, \`GET /designers/:id\`, \`POST /profile/views\`) are **public** — no token required.
+A handful of endpoints (\`GET /artisans\`, \`GET /artisans/:id\`, \`POST /profile/views\`) are **public** — no token required.
 
 ## Rate Limiting
 Auth endpoints (\`/auth/signup\`, \`/auth/login\`, \`/auth/admin/login\`) are
@@ -54,52 +54,52 @@ All error responses follow:
     {
       name: 'Auth',
       description:
-        'User registration, login (designer + admin), password management, and token validation.',
+        'User registration, login (artisan + admin), password management, and token validation.',
     },
     {
-      name: 'Designers',
+      name: 'artisans',
       description:
-        'Public read access to designer records. Write operations (update fields, add internal notes) are restricted to admin roles.',
+        'Public read access to artisan records. Write operations (update fields, add internal notes) are restricted to admin roles.',
     },
     {
       name: 'Profile',
       description:
-        "Authenticated designer's own profile (name, bio, specialty, avatar). Separate from the `Designers` admin view.",
+        "Authenticated artisan's own profile (name, bio, specialty, avatar). Separate from the `artisans` admin view.",
     },
     {
       name: 'Profile Views',
       description:
-        'Record anonymous profile views (public) and retrieve view statistics (designer-only).',
+        'Record anonymous profile views (public) and retrieve view statistics (artisan-only).',
     },
     {
       name: 'Availability',
       description:
-        'Designer availability calendar. Entries map a date (`YYYY-MM-DD`) to a status of `open`, `busy`, or `off`.',
+        'artisan availability calendar. Entries map a date (`YYYY-MM-DD`) to a status of `open`, `busy`, or `off`.',
     },
     {
       name: 'Bookings',
       description:
-        'Full booking lifecycle for a designer: create, read, update (partial), replace (full), and delete.',
+        'Full booking lifecycle for a artisan: create, read, update (partial), replace (full), and delete.',
     },
     {
       name: 'Reviews',
       description:
-        'Designer reviews — create, list, reply, increment helpful count, and delete.',
+        'artisan reviews — create, list, reply, increment helpful count, and delete.',
     },
     {
       name: 'Portfolio',
       description:
-        'Designer portfolio items (images + metadata). Supports bulk create, individual CRUD.',
+        'artisan portfolio items (images + metadata). Supports bulk create, individual CRUD.',
     },
     {
       name: 'Inquiries',
       description:
-        'Designer-specific inquiries. Status can be progressed through `New → Replied → Booked`.',
+        'artisan-specific inquiries. Status can be progressed through `New → Replied → Booked`.',
     },
     {
       name: 'Messages',
       description:
-        'Conversation threads between a designer and clients. Supports listing, marking as read, and sending messages.',
+        'Conversation threads between a artisan and clients. Supports listing, marking as read, and sending messages.',
     },
     {
       name: 'Client Profile',
@@ -182,9 +182,9 @@ All error responses follow:
           password: { type: 'string', minLength: 6, example: 'mypassword123' },
           role: {
             type: 'string',
-            enum: ['designer', 'client'],
+            enum: ['artisan', 'client'],
             default: 'client',
-            example: 'designer',
+            example: 'artisan',
           },
         },
       },
@@ -227,12 +227,12 @@ All error responses follow:
         },
       },
 
-      //  Designer 
-      Designer: {
+      //  artisan 
+      artisan: {
         type: 'object',
-        description: 'A designer record as stored and returned by the database.',
+        description: 'A artisan record as stored and returned by the database.',
         properties: {
-          id: { type: 'string', example: 'designer_123' },
+          id: { type: 'string', example: 'artisan_123' },
           name: { type: 'string', example: 'Aisha Bello' },
           email: { type: 'string', example: 'aisha@example.com' },
           specialty: { type: 'string', example: 'Bridal Wear' },
@@ -243,7 +243,7 @@ All error responses follow:
           available: { type: 'boolean', example: true },
           status: { type: 'string', example: 'Active' },
           joined: { type: 'string', example: 'Jan 2024' },
-          bio: { type: 'string', example: 'Luxury fashion designer.' },
+          bio: { type: 'string', example: 'Luxury fashion artisan.' },
           phone: { type: 'string', example: '+2348012345678' },
           yearsOfExperience: { type: 'integer', example: 7 },
           inquiries: { type: 'integer', example: 14 },
@@ -257,12 +257,12 @@ All error responses follow:
           },
           notes: {
             type: 'array',
-            items: { $ref: '#/components/schemas/DesignerNote' },
+            items: { $ref: '#/components/schemas/ArtisanNote' },
           },
         },
       },
 
-      DesignerUpdate: {
+      artisanUpdate: {
         type: 'object',
         description:
           'All fields are optional. Only provided fields will be updated. **Admin-only operation.**',
@@ -277,7 +277,7 @@ All error responses follow:
           available: { type: 'boolean', example: true },
           status: { type: 'string', example: 'Active' },
           joined: { type: 'string', example: 'Jan 2024' },
-          bio: { type: 'string', example: 'Luxury fashion designer.' },
+          bio: { type: 'string', example: 'Luxury fashion artisan.' },
           phone: { type: 'string', example: '+2348012345678' },
           yearsOfExperience: { type: 'integer', example: 7 },
           inquiries: { type: 'integer', example: 14 },
@@ -292,13 +292,13 @@ All error responses follow:
         },
       },
 
-      DesignerNote: {
+      ArtisanNote: {
         type: 'object',
-        description: 'An internal staff note attached to a designer record. Admin-only.',
+        description: 'An internal staff note attached to a artisan record. Admin-only.',
         required: ['content'],
         properties: {
           id: { type: 'string', example: 'note_abc123' },
-          designerId: { type: 'string', example: 'designer_123' },
+          artisanId: { type: 'string', example: 'artisan_123' },
           author: {
             type: 'string',
             default: 'Staff',
@@ -316,17 +316,17 @@ All error responses follow:
         },
       },
 
-      //  Profile (designer self-serve) 
-      DesignerProfile: {
+      //  Profile (artisan self-serve) 
+      ArtisanProfile: {
         type: 'object',
-        description: "The authenticated designer's editable profile.",
+        description: "The authenticated artisan's editable profile.",
         properties: {
           id: { type: 'string' },
-          designerId: { type: 'string' },
+          artisanId: { type: 'string' },
           fullName: { type: 'string', example: 'Aisha Bello' },
           specialty: { type: 'string', example: 'Bridal Wear' },
           location: { type: 'string', example: 'Lagos' },
-          bio: { type: 'string', example: 'Luxury fashion designer.' },
+          bio: { type: 'string', example: 'Luxury fashion artisan.' },
           phone: { type: 'string', example: '+2348012345678' },
           yearsOfExperience: { type: 'integer', example: 7 },
           avatar: {
@@ -337,14 +337,14 @@ All error responses follow:
         },
       },
 
-      DesignerProfileUpdate: {
+      ArtisanProfileUpdate: {
         type: 'object',
         description: 'All fields optional. Only provided fields will be updated.',
         properties: {
           fullName: { type: 'string', example: 'Aisha Bello' },
           specialty: { type: 'string', example: 'Bridal Wear' },
           location: { type: 'string', example: 'Lagos' },
-          bio: { type: 'string', example: 'Luxury fashion designer.' },
+          bio: { type: 'string', example: 'Luxury fashion artisan.' },
           phone: { type: 'string', example: '+2348012345678' },
           yearsOfExperience: { type: 'integer', example: 7 },
           avatar: { type: 'string', example: 'https://example.com/avatar.jpg' },
@@ -441,7 +441,7 @@ All error responses follow:
         description: 'A complete booking record as returned by the database.',
         properties: {
           id: { type: 'string', example: 'ckx123abc' },
-          designerId: { type: 'string' },
+          artisanId: { type: 'string' },
           client: { type: 'string', example: 'Zainab Sani' },
           initials: { type: 'string', example: 'ZS' },
           clientColor: { type: 'string', example: '#be185d' },
@@ -540,7 +540,7 @@ All error responses follow:
         description: 'A review record as returned by the database.',
         properties: {
           id: { type: 'string' },
-          designerId: { type: 'string' },
+          artisanId: { type: 'string' },
           client: { type: 'string', example: 'Muna Ahmed' },
           initials: { type: 'string', example: 'MA' },
           color: { type: 'string', example: '#422a15' },
@@ -597,7 +597,7 @@ All error responses follow:
         description: 'A portfolio item record as returned by the database.',
         properties: {
           id: { type: 'string' },
-          designerId: { type: 'string' },
+          artisanId: { type: 'string' },
           title: { type: 'string', example: 'Golden Evening Gown' },
           tag: { type: 'string', default: 'Other', example: 'Evening Wear' },
           description: { type: 'string', example: 'Hand-beaded custom gown.' },
@@ -636,7 +636,7 @@ All error responses follow:
         description: 'An inquiry record.',
         properties: {
           id: { type: 'string', example: 'inq_123' },
-          designerId: { type: 'string' },
+          artisanId: { type: 'string' },
           status: {
             type: 'string',
             enum: ['New', 'Replied', 'Booked'],
@@ -664,7 +664,7 @@ All error responses follow:
         description: 'A message conversation thread.',
         properties: {
           id: { type: 'integer', example: 1 },
-          designer: { type: 'string', example: 'Aisha Bello' },
+          artisan: { type: 'string', example: 'Aisha Bello' },
           initials: { type: 'string', example: 'AB' },
           color: { type: 'string', example: '#be185d' },
           lastMessage: { type: 'string', example: 'Thanks for confirming!' },
@@ -729,7 +729,7 @@ All error responses follow:
         operationId: 'authSignup',
         summary: 'Register a new user account',
         description:
-          'Creates a new user (designer or client). Returns a JWT on success. No authentication required.',
+          'Creates a new user (artisan or client). Returns a JWT on success. No authentication required.',
         security: [],
         requestBody: {
           required: true,
@@ -740,7 +740,7 @@ All error responses follow:
                 name: 'Jane Doe',
                 email: 'jane@example.com',
                 password: 'mypassword123',
-                role: 'designer',
+                role: 'artisan',
               },
             },
           },
@@ -771,7 +771,7 @@ All error responses follow:
       post: {
         tags: ['Auth'],
         operationId: 'authLogin',
-        summary: 'Log in as a designer or client',
+        summary: 'Log in as a artisan or client',
         description: 'Authenticates a user and returns a signed JWT. No authentication required.',
         security: [],
         requestBody: {
@@ -913,22 +913,22 @@ All error responses follow:
     },
 
     
-    // DESIGNERS 
+    // artisanS 
     
-    '/designers': {
+    '/artisans': {
       get: {
-        tags: ['Designers'],
-        operationId: 'listDesigners',
-        summary: 'List all designers',
+        tags: ['artisans'],
+        operationId: 'listartisans',
+        summary: 'List all artisans',
         description:
-          '**Public endpoint — no authentication required.** Returns all designer records including their internal notes array.',
+          '**Public endpoint — no authentication required.** Returns all artisan records including their internal notes array.',
         security: [],
         responses: {
           200: {
-            description: 'Array of designer objects.',
+            description: 'Array of artisan objects.',
             content: {
               'application/json': {
-                schema: { type: 'array', items: { $ref: '#/components/schemas/Designer' } },
+                schema: { type: 'array', items: { $ref: '#/components/schemas/artisan' } },
               },
             },
           },
@@ -937,11 +937,11 @@ All error responses follow:
       },
     },
 
-    '/designers/{id}': {
+    '/artisans/{id}': {
       get: {
-        tags: ['Designers'],
-        operationId: 'getDesigner',
-        summary: 'Get a single designer by ID',
+        tags: ['artisans'],
+        operationId: 'getartisan',
+        summary: 'Get a single artisan by ID',
         description: '**Public endpoint — no authentication required.**',
         security: [],
         parameters: [
@@ -950,15 +950,15 @@ All error responses follow:
             name: 'id',
             required: true,
             schema: { type: 'string' },
-            example: 'designer_123',
+            example: 'artisan_123',
           },
         ],
         responses: {
           200: {
-            description: 'Designer found.',
+            description: 'artisan found.',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/Designer' },
+                schema: { $ref: '#/components/schemas/artisan' },
               },
             },
           },
@@ -968,34 +968,34 @@ All error responses follow:
       },
 
       patch: {
-        tags: ['Designers'],
-        operationId: 'updateDesigner',
-        summary: "Update a designer's fields (admin only)",
+        tags: ['artisans'],
+        operationId: 'updateartisan',
+        summary: "Update a artisan's fields (admin only)",
         description:
-          'Partially updates a designer record. **Requires admin role** (`super_admin`, `profile_manager`, `support_agent`, or `auditor`). All body fields are optional.',
+          'Partially updates a artisan record. **Requires admin role** (`super_admin`, `profile_manager`, `support_agent`, or `auditor`). All body fields are optional.',
         parameters: [
           {
             in: 'path',
             name: 'id',
             required: true,
             schema: { type: 'string' },
-            example: 'designer_123',
+            example: 'artisan_123',
           },
         ],
         requestBody: {
           required: true,
           content: {
             'application/json': {
-              schema: { $ref: '#/components/schemas/DesignerUpdate' },
+              schema: { $ref: '#/components/schemas/artisanUpdate' },
               example: { specialty: 'Bridal Wear', rating: 4.9, available: true },
             },
           },
         },
         responses: {
           200: {
-            description: 'Designer updated successfully.',
+            description: 'artisan updated successfully.',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Designer' } },
+              'application/json': { schema: { $ref: '#/components/schemas/artisan' } },
             },
           },
           401: { $ref: '#/components/responses/Unauthorized' },
@@ -1006,27 +1006,27 @@ All error responses follow:
       },
     },
 
-    '/designers/{id}/notes': {
+    '/artisans/{id}/notes': {
       post: {
-        tags: ['Designers'],
-        operationId: 'addDesignerNote',
-        summary: 'Add an internal staff note to a designer (admin only)',
+        tags: ['artisans'],
+        operationId: 'addArtisanNote',
+        summary: 'Add an internal staff note to a artisan (admin only)',
         description:
-          'Creates an internal note on a designer record. **Requires admin role.** `author` defaults to `"Staff"` and `role` defaults to `"support_agent"` if omitted.',
+          'Creates an internal note on a artisan record. **Requires admin role.** `author` defaults to `"Staff"` and `role` defaults to `"support_agent"` if omitted.',
         parameters: [
           {
             in: 'path',
             name: 'id',
             required: true,
             schema: { type: 'string' },
-            example: 'designer_123',
+            example: 'artisan_123',
           },
         ],
         requestBody: {
           required: true,
           content: {
             'application/json': {
-              schema: { $ref: '#/components/schemas/DesignerNote' },
+              schema: { $ref: '#/components/schemas/ArtisanNote' },
               example: {
                 author: 'Staff',
                 role: 'support_agent',
@@ -1039,7 +1039,7 @@ All error responses follow:
           201: {
             description: 'Note created and returned.',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/DesignerNote' } },
+              'application/json': { schema: { $ref: '#/components/schemas/ArtisanNote' } },
             },
           },
           400: {
@@ -1055,20 +1055,20 @@ All error responses follow:
     },
 
    
-    // PROFILE  (designer self-serve, role: designer)
+    // PROFILE  (artisan self-serve, role: artisan)
     
     '/profile': {
       get: {
         tags: ['Profile'],
         operationId: 'getMyProfile',
-        summary: "Get the authenticated designer's profile",
+        summary: "Get the authenticated artisan's profile",
         description:
-          'Returns the profile for the currently logged-in designer. If no profile record exists yet, an empty one is created automatically.',
+          'Returns the profile for the currently logged-in artisan. If no profile record exists yet, an empty one is created automatically.',
         responses: {
           200: {
-            description: "Designer's profile.",
+            description: "artisan's profile.",
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/DesignerProfile' } },
+              'application/json': { schema: { $ref: '#/components/schemas/ArtisanProfile' } },
             },
           },
           401: { $ref: '#/components/responses/Unauthorized' },
@@ -1080,18 +1080,18 @@ All error responses follow:
       patch: {
         tags: ['Profile'],
         operationId: 'updateMyProfile',
-        summary: "Update the authenticated designer's profile",
+        summary: "Update the authenticated artisan's profile",
         description: 'All fields are optional. Only provided fields are updated.',
         requestBody: {
           required: true,
           content: {
             'application/json': {
-              schema: { $ref: '#/components/schemas/DesignerProfileUpdate' },
+              schema: { $ref: '#/components/schemas/ArtisanProfileUpdate' },
               example: {
                 fullName: 'Aisha Bello',
                 specialty: 'Bridal Wear',
                 location: 'Lagos',
-                bio: 'Luxury fashion designer.',
+                bio: 'Luxury fashion artisan.',
                 phone: '+2348012345678',
                 yearsOfExperience: 7,
                 avatar: 'https://example.com/avatar.jpg',
@@ -1103,7 +1103,7 @@ All error responses follow:
           200: {
             description: 'Profile updated. Returns the updated profile object.',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/DesignerProfile' } },
+              'application/json': { schema: { $ref: '#/components/schemas/ArtisanProfile' } },
             },
           },
           401: { $ref: '#/components/responses/Unauthorized' },
@@ -1113,25 +1113,25 @@ All error responses follow:
       },
     },
 
-    '/profile/{designerId}/availability': {
+    '/profile/{artisanId}/availability': {
       get: {
         tags: ['Profile'],
-        operationId: 'getDesignerAvailabilityByProfile',
-        summary: "Get a designer's availability by their designer ID",
+        operationId: 'getartisanAvailabilityByProfile',
+        summary: "Get a artisan's availability by their artisan ID",
         description:
-          'Looks up availability entries for any designer by their `designerId`. Requires a valid bearer token.',
+          'Looks up availability entries for any artisan by their `artisanId`. Requires a valid bearer token.',
         parameters: [
           {
             in: 'path',
-            name: 'designerId',
+            name: 'artisanId',
             required: true,
             schema: { type: 'string' },
-            example: 'designer_123',
+            example: 'artisan_123',
           },
         ],
         responses: {
           200: {
-            description: 'Availability entries for the given designer.',
+            description: 'Availability entries for the given artisan.',
             content: {
               'application/json': {
                 schema: {
@@ -1173,7 +1173,7 @@ All error responses follow:
         operationId: 'recordProfileView',
         summary: 'Record a profile view',
         description:
-          '**Public endpoint — no authentication required.** Increments the global profile view counter. Typically called when a visitor loads a designer\'s public profile page.',
+          '**Public endpoint — no authentication required.** Increments the global profile view counter. Typically called when a visitor loads a artisan\'s public profile page.',
         security: [],
         responses: {
           201: {
@@ -1199,7 +1199,7 @@ All error responses follow:
         operationId: 'getProfileViewStats',
         summary: 'Get profile view statistics',
         description:
-          'Returns the total view count and this-week view count. **Requires designer role.**',
+          'Returns the total view count and this-week view count. **Requires artisan role.**',
         responses: {
           200: {
             description: 'View statistics.',
@@ -1218,7 +1218,7 @@ All error responses follow:
     },
 
    
-    // AVAILABILITY  (role: designer)
+    // AVAILABILITY  (role: artisan)
     
     '/availability/weekdays': {
       get: {
@@ -1226,7 +1226,7 @@ All error responses follow:
         operationId: 'getWeekdayLabels',
         summary: 'Get weekday labels',
         description:
-          'Returns the ordered weekday label array used by the UI calendar: `["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]`. Requires designer auth.',
+          'Returns the ordered weekday label array used by the UI calendar: `["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]`. Requires artisan auth.',
         responses: {
           200: {
             description: 'Weekday labels.',
@@ -1247,9 +1247,9 @@ All error responses follow:
       get: {
         tags: ['Availability'],
         operationId: 'getAvailability',
-        summary: 'Get all availability entries for the logged-in designer',
+        summary: 'Get all availability entries for the logged-in artisan',
         description:
-          'Returns a map of `{ "YYYY-MM-DD": "open" | "busy" | "off" }` for all dates the designer has set.',
+          'Returns a map of `{ "YYYY-MM-DD": "open" | "busy" | "off" }` for all dates the artisan has set.',
         responses: {
           200: {
             description: 'Availability map.',
@@ -1291,7 +1291,7 @@ All error responses follow:
         },
         responses: {
           200: {
-            description: 'Availability updated. Returns all current entries for the designer.',
+            description: 'Availability updated. Returns all current entries for the artisan.',
             content: {
               'application/json': { schema: { $ref: '#/components/schemas/AvailabilityUpdateResponse' } },
             },
@@ -1376,13 +1376,13 @@ All error responses follow:
     },
 
     
-    // BOOKINGS  (role: designer)
+    // BOOKINGS  (role: artisan)
     
     '/bookings': {
       get: {
         tags: ['Bookings'],
         operationId: 'listBookings',
-        summary: 'List all bookings for the logged-in designer',
+        summary: 'List all bookings for the logged-in artisan',
         description: 'Returns bookings ordered by `createdAt` descending.',
         responses: {
           200: {
@@ -1454,7 +1454,7 @@ All error responses follow:
         tags: ['Bookings'],
         operationId: 'getBooking',
         summary: 'Get a booking by ID',
-        description: 'Only returns the booking if it belongs to the authenticated designer.',
+        description: 'Only returns the booking if it belongs to the authenticated artisan.',
         parameters: [
           {
             in: 'path',
@@ -1573,7 +1573,7 @@ All error responses follow:
         tags: ['Bookings'],
         operationId: 'deleteBooking',
         summary: 'Delete a booking',
-        description: 'Permanently deletes the booking. Only the owning designer can delete.',
+        description: 'Permanently deletes the booking. Only the owning artisan can delete.',
         parameters: [
           {
             in: 'path',
@@ -1607,13 +1607,13 @@ All error responses follow:
     },
 
     
-    // REVIEWS  (role: designer)
+    // REVIEWS  (role: artisan)
    
     '/reviews': {
       get: {
         tags: ['Reviews'],
         operationId: 'listReviews',
-        summary: 'List all reviews for the logged-in designer',
+        summary: 'List all reviews for the logged-in artisan',
         description: 'Returns reviews ordered by `createdAt` descending.',
         responses: {
           200: {
@@ -1781,13 +1781,13 @@ All error responses follow:
     },
 
     
-    // PORTFOLIO  (role: designer)
+    // PORTFOLIO  (role: artisan)
    
     '/portfolio': {
       get: {
         tags: ['Portfolio'],
         operationId: 'listPortfolioItems',
-        summary: 'List portfolio items for the logged-in designer',
+        summary: 'List portfolio items for the logged-in artisan',
         description: 'Returns items ordered by `createdAt` descending.',
         responses: {
           200: {
@@ -1962,14 +1962,14 @@ All error responses follow:
     },
 
     
-    // INQUIRIES  (role: designer)
+    // INQUIRIES  (role: artisan)
     
     '/inquiries': {
       get: {
         tags: ['Inquiries'],
         operationId: 'listInquiries',
-        summary: 'List all inquiries for the logged-in designer',
-        description: 'Returns inquiries ordered by `createdAt` descending. **Requires designer role.**',
+        summary: 'List all inquiries for the logged-in artisan',
+        description: 'Returns inquiries ordered by `createdAt` descending. **Requires artisan role.**',
         responses: {
           200: {
             description: 'Array of inquiry objects.',
@@ -2057,13 +2057,13 @@ All error responses follow:
     },
 
     
-    // MESSAGES  (role: designer)
+    // MESSAGES  (role: artisan)
     
     '/messages': {
       get: {
         tags: ['Messages'],
         operationId: 'listConversations',
-        summary: 'List all message conversations for the logged-in designer',
+        summary: 'List all message conversations for the logged-in artisan',
         description: 'Returns conversations with their full message history, ordered by ID ascending.',
         responses: {
           200: {
@@ -2229,3 +2229,5 @@ All error responses follow:
     },
   },
 }
+
+

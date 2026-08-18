@@ -8,9 +8,9 @@ const signupSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   email: emailField,
   password: strongPasswordField,
-  role: z.enum(['designer', 'client'], {
-    error: "role must be 'designer' or 'client'",
-  }).default('designer'),
+  role: z.enum(['artisan', 'client'], {
+    error: "role must be 'artisan' or 'client'",
+  }).default('artisan'),
 })
 
 
@@ -54,4 +54,3 @@ module.exports = {
   adminLoginSchema,
   changePasswordSchema,
 }
-
