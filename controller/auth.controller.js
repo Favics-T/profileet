@@ -1,0 +1,212 @@
+const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+const { prisma } = require('../config/db')
+
+function toInitials(name = '') {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+function randomColor() {
+  return `#${Math.floor(Math.random() * 16777215)
+    .toString(16)
+    .padStart(6, '0')}`
+}
+
+async function artisanSignup(req, res) {
+  const { name, email, password, specialty, location } = req.body
+
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } })
+    if (existing) {
+      return res.status(409).json({ error: 'An account with that email already exists' })
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    const newUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { name, email, password: hashedPassword, role: 'artisan' },
+      })
+
+      await tx.artisanProfile.create({
+        data: {
+          artisanId: user.id,
+          fullName: name,
+          specialty: specialty || '',
+          location: location || '',
+          initials: toInitials(name),
+          color: randomColor(),
+          joined: new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
+        },
+      })
+
+      return user
+    })
+
+    const token = jwt.sign(
+      { userId: newUser.id, email: newUser.email, role: 'artisan' },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    res.status(201).json({
+      success: true,
+      token,
+      role: 'artisan',
+      user: { id: newUser.id, email: newUser.email, name: newUser.name },
+    })
+  } catch (error) {
+    console.error('Failed to sign up artisan:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+async function clientSignup(req, res) {
+  const { name, email, password } = req.body
+
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } })
+    if (existing) {
+      return res.status(409).json({ error: 'An account with that email already exists' })
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    const newUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { name, email, password: hashedPassword, role: 'client' },
+      })
+
+      await tx.clientProfile.create({
+        data: {
+          clientId: user.id,
+          firstName: name.split(' ')[0] || '',
+          lastName: name.split(' ').slice(1).join(' ') || '',
+          email,
+        },
+      })
+
+      return user
+    })
+
+    const token = jwt.sign(
+      { userId: newUser.id, email: newUser.email, role: 'client' },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    res.status(201).json({
+      success: true,
+      token,
+      role: 'client',
+      user: { id: newUser.id, email: newUser.email, name: newUser.name },
+    })
+  } catch (error) {
+    console.error('Failed to sign up client:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+async function login(req, res) {
+  const { email, password } = req.body
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' })
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.password)
+    if (!passwordMatches) {
+      return res.status(401).json({ error: 'Invalid email or password' })
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    res.json({
+      success: true,
+      token,
+      role: user.role,
+      user: { id: user.id, email: user.email, name: user.name },
+    })
+  } catch (error) {
+    console.error('Failed to log in:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+const ADMIN_ACCOUNT = {
+  adminEmail: process.env.ADMIN_SUPER_EMAIL,
+  adminPassword: process.env.ADMIN_SUPER_PASSWORD,
+  adminName: process.env.ADMIN_SUPER_NAME,
+}
+
+async function adminLogin(req, res) {
+  const { adminEmail, adminPassword, adminName } = ADMIN_ACCOUNT
+  const { email, password } = req.body
+
+  if (email !== adminEmail) {
+    return res.status(401).json({ error: 'Only admin can have access' })
+  }
+
+  const passwordMatches = await bcrypt.compare(password, adminPassword)
+  if (!passwordMatches) {
+    return res.status(401).json({ error: 'Only admin can have access' })
+  }
+
+  const token = jwt.sign(
+    { email: adminEmail, role: 'admin', name: adminName },
+    process.env.JWT_SECRET,
+    { expiresIn: '24h' }
+  )
+
+  res.json({
+    success: true,
+    token,
+    admin: { email: adminEmail, name: adminName },
+  })
+}
+
+function testProtected(req, res) {
+  res.json({ message: 'You are authenticated', userId: req.userId })
+}
+
+async function changePassword(req, res) {
+  const { currentPassword, newPassword } = req.body
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.userId } })
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    const matches = await bcrypt.compare(currentPassword, user.password)
+    if (!matches) {
+      return res.status(401).json({ error: 'Current password is incorrect' })
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10)
+    await prisma.user.update({ where: { id: req.userId }, data: { password: hashed } })
+
+    res.json({ success: true, message: 'Password updated successfully' })
+  } catch (error) {
+    console.error('Failed to change password:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+module.exports = {
+  artisanSignup,
+  clientSignup,
+  login,
+  adminLogin,
+  changePassword,
+  testProtected,
+}
