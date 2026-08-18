@@ -2,26 +2,38 @@ const express = require('express')
 const router = express.Router()
 const { requireAuth, requireRole } = require('../middleware/auth')
 const { prisma } = require('../config/db')
+const { paginate } = require('../middleware/paginate')
 
 router.use(requireAuth, requireRole('designer'))
 
 router.get('/', async (req, res) => {
   try {
-    const conversations = await prisma.messageConversation.findMany({
-      where: { designerId: req.userId },
-      orderBy: { id: 'asc' },
-      include: { messages: true, designer: true },
+    const { skip, take, page, limit } = paginate(req)
+    const [conversations, total] = await Promise.all([
+      prisma.messageConversation.findMany({
+        where: { designerId: req.userId },
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take,
+        include: { messages: true, designer: true },
+      }),
+      prisma.messageConversation.count({ where: { designerId: req.userId } }),
+    ])
+    res.json({
+      data: conversations.map((c) => ({
+        id: c.id,
+        designer: c.designerName,
+        initials: c.initials,
+        color: c.color,
+        lastMessage: c.lastMessage,
+        time: c.time,
+        unread: c.unread,
+        messages: c.messages.map((m) => ({ id: m.id, from: m.from, text: m.text, time: m.time })),
+      })),
+      page,
+      limit,
+      total,
     })
-    res.json(conversations.map((c) => ({
-      id: c.id,
-      designer: c.designerName,
-      initials: c.initials,
-      color: c.color,
-      lastMessage: c.lastMessage,
-      time: c.time,
-      unread: c.unread,
-      messages: c.messages.map((m) => ({ id: m.id, from: m.from, text: m.text, time: m.time })),
-    })))
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch conversations' })

@@ -2,25 +2,24 @@ const express = require('express')
 const router = express.Router()
 const { requireAuth, requireRole } = require('../middleware/auth')
 const { prisma } = require('../config/db')
+const { paginate } = require('../middleware/paginate')
 
 router.use(requireAuth, requireRole('designer'))
 
 router.get('/', async (req, res) => {
   try {
-    const items = await prisma.portfolioItem.findMany({
-      where: { designerId: req.userId },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        title: true,
-        tag: true,
-        description: true,
-        imageUrl: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
-    res.json(items)
+    const { skip, take, page, limit } = paginate(req)
+    const [items, total] = await Promise.all([
+      prisma.portfolioItem.findMany({
+        where: { designerId: req.userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+        select: { id: true, title: true, tag: true, description: true, imageUrl: true, createdAt: true, updatedAt: true },
+      }),
+      prisma.portfolioItem.count({ where: { designerId: req.userId } }),
+    ])
+    res.json({ data: items, page, limit, total })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch portfolio items' })

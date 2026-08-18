@@ -3,7 +3,7 @@ const router = express.Router()
 const { requireAuth, requireRole } = require('../middleware/auth')
 const { prisma } = require('../config/db')
 
-const ADMIN_ROLES = ['super_admin', 'profile_manager', 'support_agent', 'auditor', 'admin']
+const ADMIN_ROLES = ['admin']
 
 
 async function getReviewStats(designerUserIds) {

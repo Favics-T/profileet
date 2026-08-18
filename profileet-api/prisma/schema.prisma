@@ -10,6 +10,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── DesignerProfile ─────────────────────────────────────────────────────────
+// Self-managed by the artisan. Updated via PATCH /profile.
+// Contains personal/contact details the artisan controls themselves.
+// NOT visible directly to clients — used to populate the public Designer card.
 model DesignerProfile {
   id                Int      @id @default(autoincrement())
   designerId        String   @unique
@@ -142,6 +146,11 @@ model PortfolioItem {
   updatedAt   DateTime @updatedAt
 }
 
+// ─── Designer ────────────────────────────────────────────────────────────────
+// The public-facing directory card shown to clients browsing artisans.
+// Managed by admins via PATCH /designers/:id.
+// rating and reviews are intentionally NOT updated here — they are computed
+// live from the Review table in getReviewStats() inside designersRoute.js.
 model Designer {
   id              String   @id @default(cuid())
   userId String @unique

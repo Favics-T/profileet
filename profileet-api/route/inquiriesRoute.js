@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { requireAuth, requireRole } = require('../middleware/auth')
 const { prisma } = require('../config/db')
+const { paginate } = require('../middleware/paginate')
 
 const VALID_STATUSES = ['New', 'Replied', 'Booked']
 
@@ -9,11 +10,17 @@ router.use(requireAuth, requireRole('designer'))
 
 router.get('/', async (req, res) => {
   try {
-    const inquiries = await prisma.inquiry.findMany({
-      where: { designerId: req.userId },
-      orderBy: { createdAt: 'desc' },
-    })
-    res.json(inquiries)
+    const { skip, take, page, limit } = paginate(req)
+    const [inquiries, total] = await Promise.all([
+      prisma.inquiry.findMany({
+        where: { designerId: req.userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      prisma.inquiry.count({ where: { designerId: req.userId } }),
+    ])
+    res.json({ data: inquiries, page, limit, total })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch inquiries' })

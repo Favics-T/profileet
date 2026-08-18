@@ -3,8 +3,7 @@ const jwt = require("jsonwebtoken");
 const { prisma } = require("../config/db");
 
 async function artisanSignup(req, res) {
-  
-  const { name, email, password, specialty,location } = req.body;
+  const { name, email, password, specialty, location } = req.body;
 
 
   try {
@@ -29,8 +28,10 @@ async function artisanSignup(req, res) {
         data:{
           userId:user.id,
           specialty,
+          location: location || '',
+          joined: new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
           initials: name.split(' ').map(n => n[0]).join('').toUpperCase(),
-          color:"red"
+          color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'),
         }
       })
       return user
@@ -91,12 +92,57 @@ async function login(req, res) {
   }
 }
 
-const ADMIN_ACCOUNT = 
-  {
+async function clientSignup(req, res) {
+  const { name, email, password } = req.body
+
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } })
+    if (existing) {
+      return res.status(409).json({ error: 'An account with that email already exists' })
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    const newUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { name, email, password: hashedPassword, role: 'client' },
+      })
+      // Pre-create an empty ClientProfile so GET /client/profile never 404s on first load
+      await tx.clientProfile.create({
+        data: {
+          clientId: user.id,
+          firstName: name.split(' ')[0] || '',
+          lastName: name.split(' ').slice(1).join(' ') || '',
+          email,
+        },
+      })
+      return user
+    })
+
+    const token = jwt.sign(
+      { userId: newUser.id, email: newUser.email, role: 'client' },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    res.status(201).json({
+      success: true,
+      token,
+      role: 'client',
+      user: { id: newUser.id, email: newUser.email, name: newUser.name },
+    })
+  } catch (error) {
+    console.error('Failed to sign up client:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+
+const ADMIN_ACCOUNT = {
     adminEmail:    process.env.ADMIN_SUPER_EMAIL,
     adminPassword: process.env.ADMIN_SUPER_PASSWORD,
     adminName:     process.env.ADMIN_SUPER_NAME,
-    
+
   }
 
 
@@ -154,5 +200,5 @@ async function changePassword(req, res) {
   }
 }
 
-module.exports = { artisanSignup, login, adminLogin, changePassword, testProtected };
+module.exports = { artisanSignup, clientSignup, login, adminLogin, changePassword, testProtected };
 

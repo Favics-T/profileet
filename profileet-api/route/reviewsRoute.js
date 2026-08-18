@@ -2,17 +2,24 @@ const express = require('express')
 const router = express.Router()
 const { requireAuth, requireRole } = require('../middleware/auth')
 const { prisma } = require('../config/db')
+const { paginate } = require('../middleware/paginate')
 
 const VALID_RATINGS = [1, 2, 3, 4, 5]
 
 
 router.get('/designer/:designerId', async (req, res) => {
   try {
-    const reviews = await prisma.review.findMany({
-      where: { designerId: req.params.designerId },
-      orderBy: { createdAt: 'desc' },
-    })
-    res.json(reviews)
+    const { skip, take, page, limit } = paginate(req)
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where: { designerId: req.params.designerId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      prisma.review.count({ where: { designerId: req.params.designerId } }),
+    ])
+    res.json({ data: reviews, page, limit, total })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch reviews' })
@@ -22,11 +29,17 @@ router.get('/designer/:designerId', async (req, res) => {
 
 router.get('/', requireAuth, requireRole('designer'), async (req, res) => {
   try {
-    const reviews = await prisma.review.findMany({
-      where: { designerId: req.userId },
-      orderBy: { createdAt: 'desc' },
-    })
-    res.json(reviews)
+    const { skip, take, page, limit } = paginate(req)
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where: { designerId: req.userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      prisma.review.count({ where: { designerId: req.userId } }),
+    ])
+    res.json({ data: reviews, page, limit, total })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch reviews' })

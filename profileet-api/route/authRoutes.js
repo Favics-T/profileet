@@ -3,13 +3,15 @@ const { requireAuth } = require("../middleware/auth");
 const { authLimiter } = require("../middleware/rateLimiter");
 const { validate } = require("../middleware/validate");
 const {
+  artisanSchema,
+  clientSignupSchema,
   loginSchema,
   adminLoginSchema,
   changePasswordSchema,
-  artisanSchema,
 } = require("../schemas/auth.schema");
 const {
   artisanSignup,
+  clientSignup,
   login,
   adminLogin,
   changePassword,
@@ -18,11 +20,13 @@ const {
 
 const router = express.Router();
 
-router.post("/designersignup",      authLimiter, validate(artisanSchema),artisanSignup);
-router.post("/login",       authLimiter, validate(loginSchema),          login);
-router.post("/admin/login", authLimiter, validate(adminLoginSchema),     adminLogin);
+router.post("/designersignup", authLimiter, validate(artisanSchema),   artisanSignup);
+router.post("/clientsignup",   authLimiter, validate(clientSignupSchema), clientSignup);
+router.post("/login",          authLimiter, validate(loginSchema),      login);
+router.post("/admin/login",    authLimiter, validate(adminLoginSchema),  adminLogin);
 
-router.patch("/password",   requireAuth, validate(changePasswordSchema), changePassword);
-router.get("/test-protected", requireAuth, testProtected);
+router.patch("/password",        requireAuth, validate(changePasswordSchema), changePassword);
+router.get("/test-protected",    requireAuth, testProtected);
 
 module.exports = router;
+
