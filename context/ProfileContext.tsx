@@ -34,7 +34,7 @@ const TRACKED_FIELDS: { key: keyof DesignerProfile; label: string }[] = [
 ]
 
 const STORAGE_KEY = 'styledkraft_designer_profile'
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
 function getCompletionData(profile: DesignerProfile) {
   const incomplete = TRACKED_FIELDS.filter(({ key }) => {

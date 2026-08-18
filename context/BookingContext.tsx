@@ -48,7 +48,7 @@ interface BookingContextType {
   error: string | null
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
 const BookingContext = createContext<BookingContextType | null>(null)
 
