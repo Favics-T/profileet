@@ -37,7 +37,7 @@ function mapArtisan(profile, statsMap) {
 
 async function listArtisans(req, res) {
   try {
-    const { location, specialty, available, q } = req.query
+    const { location, specialty, available, q, minBudget, maxBudget } = req.query
     const conditions = []
     const values = []
     let i = 1
@@ -71,14 +71,36 @@ async function listArtisans(req, res) {
       i++
     }
 
+    const budgetFilters = []
+    const budgetValues = []
+    let b = 1
+    if (minBudget !== undefined && minBudget !== '') {
+      budgetFilters.push(`COALESCE(bp.avg_price, 0) >= $${b}`)
+      budgetValues.push(Number(minBudget))
+      b++
+    }
+    if (maxBudget !== undefined && maxBudget !== '') {
+      budgetFilters.push(`COALESCE(bp.avg_price, 0) <= $${b}`)
+      budgetValues.push(Number(maxBudget))
+      b++
+    }
+
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     const { rows: artisans } = await pool.query(
-      `SELECT *
-       FROM "ArtisanProfile"
-       ${whereClause}
+      `SELECT ap.*, bp.min_price, bp.max_price, bp.avg_price
+       FROM "ArtisanProfile" ap
+       LEFT JOIN (
+         SELECT "designerId" AS artisan_id,
+                MIN(price) AS min_price,
+                MAX(price) AS max_price,
+                AVG(price) AS avg_price
+         FROM "Booking"
+         GROUP BY "designerId"
+       ) bp ON bp.artisan_id = ap."artisanId"
+       ${whereClause}${budgetFilters.length > 0 ? (whereClause ? ' AND ' : 'WHERE ') + budgetFilters.join(' AND ') : ''}
        ORDER BY "createdAt" DESC`,
-      values
+      [...values, ...budgetValues]
     )
 
     const ids = artisans.map((a) => a.id)
@@ -146,6 +168,14 @@ async function getArtisan(req, res) {
       [artisan.artisanId]
     )
     artisan.reviewsList = reviewRows
+
+    const { rows: pricingRows } = await pool.query(
+      `SELECT MIN(price) AS min_price, MAX(price) AS max_price, AVG(price) AS avg_price
+       FROM "Booking"
+       WHERE "designerId" = $1`,
+      [artisan.artisanId]
+    )
+    artisan.pricing = pricingRows[0]
 
     const statsMap = await getReviewStats([artisan.artisanId])
     res.json(mapArtisan(artisan, statsMap))
