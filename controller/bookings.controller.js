@@ -14,21 +14,23 @@ const toInitials = (name = '') =>
 
 const randomColour = () => COLOURS[Math.floor(Math.random() * COLOURS.length)]
 
+const bookingOwnerColumn = (role) => (role === 'artisan' ? '"designerId"' : '"clientId"')
 
 async function listBookings(req, res) {
   try {
     const { skip, take, page, limit } = paginate(req)
+    const ownerColumn = bookingOwnerColumn(req.role)
 
     const [{ rows: bookings }, countResult] = await Promise.all([
       pool.query(
         `SELECT * FROM "Booking"
-         WHERE "designerId" = $1
+         WHERE ${ownerColumn} = $1
          ORDER BY "createdAt" DESC
          OFFSET $2 LIMIT $3`,
         [req.userId, skip, take]
       ),
       pool.query(
-        `SELECT COUNT(*) FROM "Booking" WHERE "designerId" = $1`,
+        `SELECT COUNT(*) FROM "Booking" WHERE ${ownerColumn} = $1`,
         [req.userId]
       ),
     ])
@@ -41,13 +43,14 @@ async function listBookings(req, res) {
   }
 }
 
-
 async function getBooking(req, res) {
   try {
+    const ownerColumn = bookingOwnerColumn(req.role)
     const { rows } = await pool.query(
-      `SELECT * FROM "Booking" WHERE id = $1 AND "designerId" = $2 LIMIT 1`,
+      `SELECT * FROM "Booking" WHERE id = $1 AND ${ownerColumn} = $2 LIMIT 1`,
       [req.params.id, req.userId]
     )
+
     if (rows.length === 0) return res.status(404).json({ error: 'Booking not found' })
     res.json(rows[0])
   } catch (err) {
@@ -56,39 +59,56 @@ async function getBooking(req, res) {
   }
 }
 
-
 async function createBooking(req, res) {
   const {
-    client, service, occasion, deliveryDate, price, depositAmount,
+    artisanId, client, service, occasion, deliveryDate, price, depositAmount,
     clientPhone, quantity, urgent, designNotes, fabrics, colors,
     inspirationRef, measurements, consultation,
   } = req.body
 
-  if (!client || !service || !occasion || !deliveryDate || price == null || depositAmount == null) {
-    return res.status(400).json({ error: 'client, service, occasion, deliveryDate, price, and depositAmount are required' })
+  if (!artisanId || !client || !service || !occasion || !deliveryDate || price == null || depositAmount == null) {
+    return res.status(400).json({ error: 'artisanId, client, service, occasion, deliveryDate, price, and depositAmount are required' })
   }
 
   try {
     const { rows } = await pool.query(
       `INSERT INTO "Booking" (
-         id, "designerId", client, initials, "clientColor", "clientPhone",
+         id, "designerId", "clientId", client, initials, "clientColor", "clientPhone",
          service, occasion, "deliveryDate", quantity, urgent, status,
          "receivedAt", price, "depositPaid", "depositAmount", "designNotes",
          fabrics, colors, "inspirationRef", measurements, consultation
        )
        VALUES (
-         $1, $2, $3, $4, $5, $6,
-         $7, $8, $9, $10, $11, $12,
-         $13, $14, $15, $16, $17,
-         $18, $19, $20, $21, $22
+         $1, $2, $3, $4, $5, $6, $7,
+         $8, $9, $10, $11, $12, $13,
+         $14, $15, $16, $17, $18,
+         $19, $20, $21, $22, $23
        )
        RETURNING *`,
       [
-        cuid(), req.userId, client, toInitials(client), randomColour(), clientPhone ?? '',
-        service, occasion, deliveryDate, quantity ?? 1, urgent ?? false, 'pending',
-        new Date(), Number(price), false, Number(depositAmount), designNotes ?? '',
-        fabrics ?? [], colors ?? [], inspirationRef ?? '',
-        JSON.stringify(measurements ?? {}), JSON.stringify(consultation ?? { requested: false, status: 'none' }),
+        cuid(),
+        artisanId,
+        req.userId,
+        client,
+        toInitials(client),
+        randomColour(),
+        clientPhone ?? '',
+        service,
+        occasion,
+        deliveryDate,
+        quantity ?? 1,
+        urgent ?? false,
+        'pending',
+        new Date(),
+        Number(price),
+        false,
+        Number(depositAmount),
+        designNotes ?? '',
+        fabrics ?? [],
+        colors ?? [],
+        inspirationRef ?? '',
+        JSON.stringify(measurements ?? {}),
+        JSON.stringify(consultation ?? { requested: false, status: 'none' }),
       ]
     )
     res.status(201).json(rows[0])
@@ -100,9 +120,11 @@ async function createBooking(req, res) {
 
 async function updateBooking(req, res) {
   const { id } = req.params
+
   try {
+    const ownerColumn = bookingOwnerColumn(req.role)
     const { rows: existingRows } = await pool.query(
-      `SELECT * FROM "Booking" WHERE id = $1 AND "designerId" = $2 LIMIT 1`,
+      `SELECT * FROM "Booking" WHERE id = $1 AND ${ownerColumn} = $2 LIMIT 1`,
       [id, req.userId]
     )
     const existing = existingRows[0]
@@ -161,22 +183,22 @@ async function updateBooking(req, res) {
   }
 }
 
-
 async function replaceBooking(req, res) {
   const { id } = req.params
   const {
-    client, service, occasion, deliveryDate, price, depositAmount,
+    artisanId, client, service, occasion, deliveryDate, price, depositAmount,
     clientPhone, quantity, urgent, designNotes, fabrics, colors,
     inspirationRef, measurements, consultation,
   } = req.body
 
-  if (!client || !service || !occasion || !deliveryDate || price == null || depositAmount == null) {
-    return res.status(400).json({ error: 'client, service, occasion, deliveryDate, price, and depositAmount are required for a full update' })
+  if (!artisanId || !client || !service || !occasion || !deliveryDate || price == null || depositAmount == null) {
+    return res.status(400).json({ error: 'artisanId, client, service, occasion, deliveryDate, price, and depositAmount are required for a full update' })
   }
 
   try {
+    const ownerColumn = bookingOwnerColumn(req.role)
     const { rows: existingRows } = await pool.query(
-      `SELECT * FROM "Booking" WHERE id = $1 AND "designerId" = $2 LIMIT 1`,
+      `SELECT * FROM "Booking" WHERE id = $1 AND ${ownerColumn} = $2 LIMIT 1`,
       [id, req.userId]
     )
     const existing = existingRows[0]
@@ -184,35 +206,52 @@ async function replaceBooking(req, res) {
 
     const { rows } = await pool.query(
       `UPDATE "Booking" SET
-         client = $1,
-         initials = $2,
-         service = $3,
-         occasion = $4,
-         "deliveryDate" = $5,
-         price = $6,
-         "depositAmount" = $7,
-         "clientPhone" = $8,
-         quantity = $9,
-         urgent = $10,
-         "designNotes" = $11,
-         fabrics = $12,
-         colors = $13,
-         "inspirationRef" = $14,
-         measurements = $15,
-         consultation = $16,
-         "clientColor" = $17,
-         "receivedAt" = $18
-       WHERE id = $19
+         "designerId" = $1,
+         "clientId" = $2,
+         client = $3,
+         initials = $4,
+         "clientColor" = $5,
+         "clientPhone" = $6,
+         service = $7,
+         occasion = $8,
+         "deliveryDate" = $9,
+         quantity = $10,
+         urgent = $11,
+         price = $12,
+         "depositPaid" = $13,
+         "depositAmount" = $14,
+         "designNotes" = $15,
+         fabrics = $16,
+         colors = $17,
+         "inspirationRef" = $18,
+         measurements = $19,
+         consultation = $20,
+         "receivedAt" = $21
+       WHERE id = $22
        RETURNING *`,
       [
-        client, toInitials(client), service, occasion, deliveryDate,
-        Number(price), Number(depositAmount), clientPhone ?? existing.clientPhone,
-        quantity != null ? Number(quantity) : existing.quantity, urgent ?? existing.urgent,
-        designNotes ?? existing.designNotes, fabrics ?? existing.fabrics, colors ?? existing.colors,
-        inspirationRef ?? existing.inspirationRef,
-        JSON.stringify(measurements ?? existing.measurements),
-        JSON.stringify(consultation ?? existing.consultation),
-        existing.clientColor, existing.receivedAt, id,
+        artisanId,
+        req.userId,
+        client,
+        toInitials(client),
+        existing.clientColor ?? randomColour(),
+        clientPhone ?? '',
+        service,
+        occasion,
+        deliveryDate,
+        quantity ?? 1,
+        urgent ?? false,
+        Number(price),
+        false,
+        Number(depositAmount),
+        designNotes ?? '',
+        fabrics ?? [],
+        colors ?? [],
+        inspirationRef ?? '',
+        JSON.stringify(measurements ?? {}),
+        JSON.stringify(consultation ?? { requested: false, status: 'none' }),
+        existing.receivedAt ?? new Date(),
+        id,
       ]
     )
     res.json(rows[0])
@@ -222,11 +261,11 @@ async function replaceBooking(req, res) {
   }
 }
 
-
 async function deleteBooking(req, res) {
   try {
+    const ownerColumn = bookingOwnerColumn(req.role)
     const { rows } = await pool.query(
-      `DELETE FROM "Booking" WHERE id = $1 AND "designerId" = $2 RETURNING *`,
+      `DELETE FROM "Booking" WHERE id = $1 AND ${ownerColumn} = $2 RETURNING *`,
       [req.params.id, req.userId]
     )
     if (rows.length === 0) return res.status(404).json({ error: 'Booking not found' })

@@ -1,3 +1,4 @@
+const cuid = require('cuid')
 const { pool } = require('../config/db')
 
 const VALID_STATUSES = ['open', 'busy', 'off']
@@ -22,6 +23,23 @@ async function listAvailability(req, res) {
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch availability' })
+  }
+}
+
+async function getPublicAvailability(req, res) {
+  try {
+    const { artisanId } = req.params
+    const { rows } = await pool.query(
+      `SELECT date, status
+       FROM "Availability"
+       WHERE "designerId" = $1
+       ORDER BY date ASC`,
+      [artisanId]
+    )
+    res.json({ artisanId, availability: rows })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Failed to fetch artisan availability' })
   }
 }
 
@@ -103,6 +121,7 @@ async function deleteAvailability(req, res) {
 module.exports = {
   getWeekDays,
   listAvailability,
+  getPublicAvailability,
   getAvailabilityByDate,
   upsertAvailability,
   deleteAvailability,

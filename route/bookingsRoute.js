@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { requireAuth, requireArtisan } = require('../middleware/auth')
+const { requireAuth } = require('../middleware/auth')
 const {
   listBookings,
   getBooking,
@@ -10,7 +10,7 @@ const {
   deleteBooking,
 } = require('../controller/bookings.controller')
 
-router.use(requireAuth, requireArtisan)
+router.use(requireAuth)
 router.get('/', listBookings)
 router.get('/:id', getBooking)
 router.post('/', createBooking)
