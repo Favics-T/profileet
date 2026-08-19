@@ -37,8 +37,48 @@ function mapArtisan(profile, statsMap) {
 
 async function listArtisans(req, res) {
   try {
+    const { location, specialty, available, q } = req.query
+    const conditions = []
+    const values = []
+    let i = 1
+
+    if (location) {
+      conditions.push(`LOWER("location") LIKE LOWER($${i})`)
+      values.push(`%${location}%`)
+      i++
+    }
+
+    if (specialty) {
+      conditions.push(`LOWER("specialty") LIKE LOWER($${i})`)
+      values.push(`%${specialty}%`)
+      i++
+    }
+
+    if (available !== undefined) {
+      conditions.push(`"available" = $${i}`)
+      values.push(String(available).toLowerCase() === 'true')
+      i++
+    }
+
+    if (q) {
+      conditions.push(`(
+        LOWER("fullName") LIKE LOWER($${i})
+        OR LOWER("specialty") LIKE LOWER($${i})
+        OR LOWER("location") LIKE LOWER($${i})
+        OR LOWER("bio") LIKE LOWER($${i})
+      )`)
+      values.push(`%${q}%`)
+      i++
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
     const { rows: artisans } = await pool.query(
-      `SELECT * FROM "ArtisanProfile" ORDER BY "createdAt" ASC`
+      `SELECT *
+       FROM "ArtisanProfile"
+       ${whereClause}
+       ORDER BY "createdAt" DESC`,
+      values
     )
 
     const ids = artisans.map((a) => a.id)
@@ -73,7 +113,9 @@ async function listArtisans(req, res) {
 async function getArtisan(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM "ArtisanProfile" WHERE id = $1`,
+      `SELECT *
+       FROM "ArtisanProfile"
+       WHERE id = $1`,
       [req.params.id]
     )
     if (rows.length === 0) return res.status(404).json({ error: 'Artisan not found' })
@@ -84,6 +126,26 @@ async function getArtisan(req, res) {
       [artisan.id]
     )
     artisan.notes = notes
+
+    const { rows: portfolioItems } = await pool.query(
+      `SELECT id, title, tag, description, "imageUrl", "createdAt", "updatedAt"
+       FROM "PortfolioItem"
+       WHERE "designerId" = $1
+       ORDER BY "createdAt" DESC
+       LIMIT 6`,
+      [artisan.artisanId]
+    )
+    artisan.portfolioItems = portfolioItems
+
+    const { rows: reviewRows } = await pool.query(
+      `SELECT id, client, initials, color, service, rating, date, text, helpful, replied, reply, "createdAt"
+       FROM "Review"
+       WHERE "designerId" = $1
+       ORDER BY "createdAt" DESC
+       LIMIT 10`,
+      [artisan.artisanId]
+    )
+    artisan.reviewsList = reviewRows
 
     const statsMap = await getReviewStats([artisan.artisanId])
     res.json(mapArtisan(artisan, statsMap))
