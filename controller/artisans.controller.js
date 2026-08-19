@@ -1,35 +1,90 @@
-const { prisma } = require('../config/db')
+const { pool } = require('../config/db')
+
 
 async function getReviewStats(artisanUserIds) {
-  const stats = await prisma.review.groupBy({
-    by: ['artisanId'],
-    where: { artisanId: { in: artisanUserIds } },
-    _avg: { rating: true },
-    _count: { id: true },
-  })
-  return new Map(stats.map((s) => [s.artisanId, { rating: s._avg.rating ?? 0, reviews: s._count.id }]))
+  if (artisanUserIds.length === 0) return new Map()
+
+  const { rows } = await pool.query(
+    `SELECT
+       "designerId" AS "artisanId",
+       COALESCE(AVG(rating), 0) AS avg_rating,
+       COUNT(id)                AS review_count
+     FROM "Review"
+     WHERE "designerId" = ANY($1)
+     GROUP BY "designerId"`,
+    [artisanUserIds]
+  )
+
+  return new Map(
+    rows.map((r) => [
+      r.artisanId,
+      { rating: Number(r.avg_rating), reviews: Number(r.review_count) },
+    ])
+  )
 }
+
 
 function mapArtisan(profile, statsMap) {
   const stats = statsMap?.get(profile.artisanId) ?? { rating: 0, reviews: 0 }
-  return { ...profile, rating: Math.round(stats.rating * 10) / 10, reviews: stats.reviews, notes: profile.notes ?? [] }
+  return {
+    ...profile,
+    rating: Math.round(stats.rating * 10) / 10,
+    reviews: stats.reviews,
+    notes: profile.notes ?? [],
+  }
 }
+
 
 async function listArtisans(req, res) {
   try {
-    const artisans = await prisma.artisanProfile.findMany({ orderBy: { createdAt: 'asc' }, include: { notes: true } })
+    const { rows: artisans } = await pool.query(
+      `SELECT * FROM "ArtisanProfile" ORDER BY "createdAt" ASC`
+    )
+
+    const ids = artisans.map((a) => a.id)
+    let notesByArtisan = new Map()
+    if (ids.length > 0) {
+      const { rows: notes } = await pool.query(
+        `SELECT * FROM "ArtisanNote" WHERE "artisanProfileId" = ANY($1)`,
+        [ids]
+      )
+      notesByArtisan = notes.reduce((map, note) => {
+        const list = map.get(note.artisanProfileId) ?? []
+        list.push(note)
+        map.set(note.artisanProfileId, list)
+        return map
+      }, new Map())
+    }
+
+    const withNotes = artisans.map((a) => ({
+      ...a,
+      notes: notesByArtisan.get(a.id) ?? [],
+    }))
+
     const statsMap = await getReviewStats(artisans.map((a) => a.artisanId))
-    res.json(artisans.map((a) => mapArtisan(a, statsMap)))
+    res.json(withNotes.map((a) => mapArtisan(a, statsMap)))
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch artisans' })
   }
 }
 
+
 async function getArtisan(req, res) {
   try {
-    const artisan = await prisma.artisanProfile.findUnique({ where: { id: req.params.id }, include: { notes: true } })
-    if (!artisan) return res.status(404).json({ error: 'Artisan not found' })
+    const { rows } = await pool.query(
+      `SELECT * FROM "ArtisanProfile" WHERE id = $1`,
+      [req.params.id]
+    )
+    if (rows.length === 0) return res.status(404).json({ error: 'Artisan not found' })
+    const artisan = rows[0]
+
+    const { rows: notes } = await pool.query(
+      `SELECT * FROM "ArtisanNote" WHERE "artisanProfileId" = $1`,
+      [artisan.id]
+    )
+    artisan.notes = notes
+
     const statsMap = await getReviewStats([artisan.artisanId])
     res.json(mapArtisan(artisan, statsMap))
   } catch (err) {
@@ -38,29 +93,72 @@ async function getArtisan(req, res) {
   }
 }
 
+
 async function updateArtisan(req, res) {
   try {
-    const existing = await prisma.artisanProfile.findUnique({ where: { id: req.params.id } })
-    if (!existing) return res.status(404).json({ error: 'Artisan not found' })
-    const updated = await prisma.artisanProfile.update({
-      where: { id: req.params.id },
-      data: {
-        ...(req.body.specialty !== undefined && { specialty: req.body.specialty }),
-        ...(req.body.location !== undefined && { location: req.body.location }),
-        ...(req.body.startingPrice !== undefined && { startingPrice: Number(req.body.startingPrice) }),
-        ...(req.body.available !== undefined && { available: req.body.available }),
-        ...(req.body.status !== undefined && { status: req.body.status }),
-        ...(req.body.joined !== undefined && { joined: req.body.joined }),
-        ...(req.body.fullName !== undefined && { fullName: req.body.fullName }),
-        ...(req.body.bio !== undefined && { bio: req.body.bio }),
-        ...(req.body.phone !== undefined && { phone: req.body.phone }),
-        ...(req.body.yearsOfExperience !== undefined && { yearsOfExperience: Number(req.body.yearsOfExperience) }),
-        ...(req.body.initials !== undefined && { initials: req.body.initials }),
-        ...(req.body.color !== undefined && { color: req.body.color }),
-        ...(req.body.styles !== undefined && { styles: req.body.styles }),
-      },
-      include: { notes: true },
-    })
+    const { rows: existingRows } = await pool.query(
+      `SELECT id FROM "ArtisanProfile" WHERE id = $1`,
+      [req.params.id]
+    )
+    if (existingRows.length === 0) return res.status(404).json({ error: 'Artisan not found' })
+
+    
+    const fieldMap = {
+      specialty: 'specialty',
+      location: 'location',
+      available: 'available',
+      status: 'status',
+      joined: 'joined',
+      fullName: '"fullName"',
+      bio: 'bio',
+      phone: 'phone',
+      yearsOfExperience: '"yearsOfExperience"',
+      initials: 'initials',
+      color: 'color',
+      styles: 'styles',
+    }
+
+    const setClauses = []
+    const values = []
+    let i = 1
+
+    for (const [field, column] of Object.entries(fieldMap)) {
+      if (req.body[field] === undefined) continue
+      let value = req.body[field]
+      if (field === 'yearsOfExperience') value = Number(value)
+      const castSuffix = field === 'status' ? '::"ArtisanStatus"' : ''
+      setClauses.push(`${column} = $${i}${castSuffix}`)
+      values.push(value)
+      i++
+    }
+
+    
+    if (setClauses.length === 0) {
+     
+      const { rows } = await pool.query(`SELECT * FROM "ArtisanProfile" WHERE id = $1`, [req.params.id])
+      const artisan = rows[0]
+      const { rows: notes } = await pool.query(`SELECT * FROM "ArtisanNote" WHERE "artisanProfileId" = $1`, [artisan.id])
+      artisan.notes = notes
+      const statsMap = await getReviewStats([artisan.artisanId])
+      return res.json(mapArtisan(artisan, statsMap))
+    }
+
+    values.push(req.params.id) 
+    const { rows: updatedRows } = await pool.query(
+      `UPDATE "ArtisanProfile"
+       SET ${setClauses.join(', ')}
+       WHERE id = $${i}
+       RETURNING *`,
+      values
+    )
+    const updated = updatedRows[0]
+
+    const { rows: notes } = await pool.query(
+      `SELECT * FROM "ArtisanNote" WHERE "artisanProfileId" = $1`,
+      [updated.id]
+    )
+    updated.notes = notes
+
     const statsMap = await getReviewStats([updated.artisanId])
     res.json(mapArtisan(updated, statsMap))
   } catch (err) {
@@ -69,16 +167,31 @@ async function updateArtisan(req, res) {
   }
 }
 
+
 async function addArtisanNote(req, res) {
   const { author, role, content } = req.body
   if (!content || !content.trim()) return res.status(400).json({ error: 'Note content is required' })
+
   try {
-    const artisan = await prisma.artisanProfile.findUnique({ where: { id: req.params.id } })
-    if (!artisan) return res.status(404).json({ error: 'Artisan not found' })
-    const note = await prisma.artisanNote.create({
-      data: { artisanProfileId: req.params.id, author: author || 'Staff', role: role || 'support_agent', content: content.trim(), createdAt: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) },
+    const { rows: artisanRows } = await pool.query(
+      `SELECT id FROM "ArtisanProfile" WHERE id = $1`,
+      [req.params.id]
+    )
+    if (artisanRows.length === 0) return res.status(404).json({ error: 'Artisan not found' })
+
+    const createdAt = new Date().toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
     })
-    res.status(201).json(note)
+
+    const { rows } = await pool.query(
+      `INSERT INTO "ArtisanNote" ("artisanProfileId", author, role, content, "createdAt")
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [req.params.id, author || 'Staff', role || 'support_agent', content.trim(), createdAt]
+    )
+    res.status(201).json(rows[0])
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to save note' })
