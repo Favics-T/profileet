@@ -71,34 +71,27 @@ async function listArtisans(req, res) {
       i++
     }
 
-    const budgetFilters = []
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+    const budgetClause = []
     const budgetValues = []
     let b = 1
     if (minBudget !== undefined && minBudget !== '') {
-      budgetFilters.push(`COALESCE(bp.avg_price, 0) >= $${b}`)
+      budgetClause.push(`COALESCE(pr."startingPrice", 0) >= $${b}`)
       budgetValues.push(Number(minBudget))
       b++
     }
     if (maxBudget !== undefined && maxBudget !== '') {
-      budgetFilters.push(`COALESCE(bp.avg_price, 0) <= $${b}`)
+      budgetClause.push(`COALESCE(pr."startingPrice", 0) <= $${b}`)
       budgetValues.push(Number(maxBudget))
       b++
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-
     const { rows: artisans } = await pool.query(
-      `SELECT ap.*, bp.min_price, bp.max_price, bp.avg_price
+      `SELECT ap.*, pr.currency, pr."startingPrice", pr."hourlyRate", pr."consultationFee",
+              pr."deliveryFee", pr."minimumBudget", pr.notes AS pricing_notes
        FROM "ArtisanProfile" ap
-       LEFT JOIN (
-         SELECT "designerId" AS artisan_id,
-                MIN(price) AS min_price,
-                MAX(price) AS max_price,
-                AVG(price) AS avg_price
-         FROM "Booking"
-         GROUP BY "designerId"
-       ) bp ON bp.artisan_id = ap."artisanId"
-       ${whereClause}${budgetFilters.length > 0 ? (whereClause ? ' AND ' : 'WHERE ') + budgetFilters.join(' AND ') : ''}
+       LEFT JOIN "ArtisanPricing" pr ON pr."artisanId" = ap."artisanId"
+       ${whereClause}${budgetClause.length > 0 ? (whereClause ? ' AND ' : 'WHERE ') + budgetClause.join(' AND ') : ''}
        ORDER BY "createdAt" DESC`,
       [...values, ...budgetValues]
     )
@@ -170,12 +163,12 @@ async function getArtisan(req, res) {
     artisan.reviewsList = reviewRows
 
     const { rows: pricingRows } = await pool.query(
-      `SELECT MIN(price) AS min_price, MAX(price) AS max_price, AVG(price) AS avg_price
-       FROM "Booking"
-       WHERE "designerId" = $1`,
+      `SELECT *
+       FROM "ArtisanPricing"
+       WHERE "artisanId" = $1`,
       [artisan.artisanId]
     )
-    artisan.pricing = pricingRows[0]
+    artisan.pricing = pricingRows[0] ?? null
 
     const statsMap = await getReviewStats([artisan.artisanId])
     res.json(mapArtisan(artisan, statsMap))

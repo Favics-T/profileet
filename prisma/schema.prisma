@@ -38,9 +38,26 @@ model ArtisanProfile {
   // Relation
   notes             ArtisanNote[]
   messages          MessageConversation[]
+  pricing           ArtisanPricing?
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+
+model ArtisanPricing {
+  id               String   @id @default(cuid())
+  artisanId        String   @unique
+  artisan          User     @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  currency         String   @default("NGN")
+  startingPrice    Int      @default(0)
+  hourlyRate       Int      @default(0)
+  consultationFee  Int      @default(0)
+  deliveryFee      Int      @default(0)
+  minimumBudget    Int      @default(0)
+  notes            String   @default("")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 
@@ -111,6 +128,7 @@ model User {
   password          String
   role              Role            @default(artisan)
   artisanProfile    ArtisanProfile?
+  artisanPricing    ArtisanPricing?
   bookingOwnerships Booking[]       @relation("BookingArtisan")
   bookingClients    Booking[]       @relation("BookingClient")
   inquiryOwnerships Inquiry[]       @relation("InquiryArtisan")
