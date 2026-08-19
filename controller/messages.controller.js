@@ -8,7 +8,7 @@ async function listConversations(req, res) {
     const [conversationsResult, countResult] = await Promise.all([
       pool.query(
         `SELECT mc.id, mc."artisanName", mc.initials, mc.color, mc."lastMessage", mc.time, mc.unread,
-                m.id AS message_id, m.from AS message_from, m.text AS message_text, m.time AS message_time
+                m.id AS message_id, m."from" AS message_from, m.text AS message_text, m.time AS message_time
          FROM "MessageConversation" mc
          LEFT JOIN "Message" m ON m."conversationId" = mc.id
          WHERE mc."designerId" = $1
@@ -27,7 +27,7 @@ async function listConversations(req, res) {
       if (!map.has(row.id)) {
         map.set(row.id, {
           id: row.id,
-          artisan: row.artisName || row.artisanName,
+          artisan: row.artisanName,
           initials: row.initials,
           color: row.color,
           lastMessage: row.lastMessage,
@@ -70,7 +70,7 @@ async function markConversationRead(req, res) {
     const updated = rows[0]
     if (!updated) return res.status(404).json({ error: 'Conversation not found' })
     const { rows: messages } = await pool.query(
-      `SELECT id, from, text, time
+      `SELECT id, "from", text, time
        FROM "Message"
        WHERE "conversationId" = $1
        ORDER BY "createdAt" ASC`,
@@ -101,7 +101,7 @@ async function sendMessage(req, res) {
     const time = new Date().toISOString()
     const messageId = cuid()
     const { rows: messageRows } = await pool.query(
-      `INSERT INTO "Message" (id, "conversationId", from, text, time)
+      `INSERT INTO "Message" (id, "conversationId", "from", text, time)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
       [messageId, conversation.id, req.role, text.trim(), time]
