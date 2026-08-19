@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
-const { prisma } = require('../config/db')
+const cuid = require('cuid')
+const { pool } = require('../config/db')
 
 function toInitials(name = '') {
   return name
@@ -17,36 +18,43 @@ function randomColor() {
     .padStart(6, '0')}`
 }
 
+
 async function artisanSignup(req, res) {
   const { name, email, password, specialty, location } = req.body
+  const client = await pool.connect()
 
   try {
-    const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) {
+    const { rows: existingRows } = await client.query(
+      `SELECT id FROM "User" WHERE email = $1`,
+      [email]
+    )
+    if (existingRows.length > 0) {
       return res.status(409).json({ error: 'An account with that email already exists' })
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
+    const userId = cuid()
 
-    const newUser = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: { name, email, password: hashedPassword, role: 'artisan' },
-      })
+    await client.query('BEGIN')
 
-      await tx.artisanProfile.create({
-        data: {
-          artisanId: user.id,
-          fullName: name,
-          specialty: specialty || '',
-          location: location || '',
-          initials: toInitials(name),
-          color: randomColor(),
-          joined: new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
-        },
-      })
+    const { rows: userRows } = await client.query(
+      `INSERT INTO "User" (id, name, email, password, role)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [userId, name, email, hashedPassword, 'artisan']
+    )
+    const newUser = userRows[0]
 
-      return user
-    })
+    const profileId = cuid()
+    const joined = new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+
+    await client.query(
+      `INSERT INTO "ArtisanProfile" (id, "artisanId", "fullName", specialty, location, initials, color, joined)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [profileId, userId, name, specialty || '', location || '', toInitials(name), randomColor(), joined]
+    )
+
+    await client.query('COMMIT')
 
     const token = jwt.sign(
       { userId: newUser.id, email: newUser.email, role: 'artisan' },
@@ -61,38 +69,52 @@ async function artisanSignup(req, res) {
       user: { id: newUser.id, email: newUser.email, name: newUser.name },
     })
   } catch (error) {
+    await client.query('ROLLBACK')
     console.error('Failed to sign up artisan:', error)
     res.status(500).json({ error: 'Internal server error' })
+  } finally {
+    client.release()
   }
 }
 
+
 async function clientSignup(req, res) {
   const { name, email, password } = req.body
+  const client = await pool.connect()
 
   try {
-    const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) {
+    const { rows: existingRows } = await client.query(
+      `SELECT id FROM "User" WHERE email = $1`,
+      [email]
+    )
+    if (existingRows.length > 0) {
       return res.status(409).json({ error: 'An account with that email already exists' })
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
+    const userId = cuid()
 
-    const newUser = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: { name, email, password: hashedPassword, role: 'client' },
-      })
+    await client.query('BEGIN')
 
-      await tx.clientProfile.create({
-        data: {
-          clientId: user.id,
-          firstName: name.split(' ')[0] || '',
-          lastName: name.split(' ').slice(1).join(' ') || '',
-          email,
-        },
-      })
+    const { rows: userRows } = await client.query(
+      `INSERT INTO "User" (id, name, email, password, role)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [userId, name, email, hashedPassword, 'client']
+    )
+    const newUser = userRows[0]
 
-      return user
-    })
+    const profileId = cuid()
+    const firstName = name.split(' ')[0] || ''
+    const lastName = name.split(' ').slice(1).join(' ') || ''
+
+    await client.query(
+      `INSERT INTO "ClientProfile" (id, "clientId", "firstName", "lastName", email)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [profileId, userId, firstName, lastName, email]
+    )
+
+    await client.query('COMMIT')
 
     const token = jwt.sign(
       { userId: newUser.id, email: newUser.email, role: 'client' },
@@ -107,16 +129,24 @@ async function clientSignup(req, res) {
       user: { id: newUser.id, email: newUser.email, name: newUser.name },
     })
   } catch (error) {
+    await client.query('ROLLBACK')
     console.error('Failed to sign up client:', error)
     res.status(500).json({ error: 'Internal server error' })
+  } finally {
+    client.release()
   }
 }
+
 
 async function login(req, res) {
   const { email, password } = req.body
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } })
+    const { rows } = await pool.query(
+      `SELECT * FROM "User" WHERE email = $1`,
+      [email]
+    )
+    const user = rows[0]
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' })
     }
@@ -143,6 +173,7 @@ async function login(req, res) {
     res.status(500).json({ error: 'Internal server error' })
   }
 }
+
 
 const ADMIN_ACCOUNT = {
   adminEmail: process.env.ADMIN_SUPER_EMAIL,
@@ -180,11 +211,16 @@ function testProtected(req, res) {
   res.json({ message: 'You are authenticated', userId: req.userId })
 }
 
+
 async function changePassword(req, res) {
   const { currentPassword, newPassword } = req.body
 
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.userId } })
+    const { rows } = await pool.query(
+      `SELECT * FROM "User" WHERE id = $1`,
+      [req.userId]
+    )
+    const user = rows[0]
     if (!user) return res.status(404).json({ error: 'User not found' })
 
     const matches = await bcrypt.compare(currentPassword, user.password)
@@ -193,7 +229,10 @@ async function changePassword(req, res) {
     }
 
     const hashed = await bcrypt.hash(newPassword, 10)
-    await prisma.user.update({ where: { id: req.userId }, data: { password: hashed } })
+    await pool.query(
+      `UPDATE "User" SET password = $1 WHERE id = $2`,
+      [hashed, req.userId]
+    )
 
     res.json({ success: true, message: 'Password updated successfully' })
   } catch (error) {

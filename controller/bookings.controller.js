@@ -1,4 +1,6 @@
-const { prisma } = require('../config/db')
+const cuid = require('cuid')
+const { pool } = require('../config/db')
+const { paginate } = require('../middleware/paginate')
 
 const VALID_STATUSES = ['pending', 'accepted', 'in_progress', 'completed', 'cancelled']
 const COLOURS = ['#be185d', '#0ea5e9', '#7c3aed', '#16a34a', '#d97706', '#0891b2', '#dc2626', '#059669']
@@ -12,18 +14,26 @@ const toInitials = (name = '') =>
 
 const randomColour = () => COLOURS[Math.floor(Math.random() * COLOURS.length)]
 
+
 async function listBookings(req, res) {
   try {
-    const { skip, take, page, limit } = require('../middleware/paginate').paginate(req)
-    const [bookings, total] = await Promise.all([
-      prisma.booking.findMany({
-        where: { artisanId: req.userId },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-      prisma.booking.count({ where: { artisanId: req.userId } }),
+    const { skip, take, page, limit } = paginate(req)
+
+    const [{ rows: bookings }, countResult] = await Promise.all([
+      pool.query(
+        `SELECT * FROM "Booking"
+         WHERE "designerId" = $1
+         ORDER BY "createdAt" DESC
+         OFFSET $2 LIMIT $3`,
+        [req.userId, skip, take]
+      ),
+      pool.query(
+        `SELECT COUNT(*) FROM "Booking" WHERE "designerId" = $1`,
+        [req.userId]
+      ),
     ])
+
+    const total = Number(countResult.rows[0].count)
     res.json({ data: bookings, page, limit, total })
   } catch (err) {
     console.error(err)
@@ -31,18 +41,21 @@ async function listBookings(req, res) {
   }
 }
 
+
 async function getBooking(req, res) {
   try {
-    const booking = await prisma.booking.findFirst({
-      where: { id: req.params.id, artisanId: req.userId },
-    })
-    if (!booking) return res.status(404).json({ error: 'Booking not found' })
-    res.json(booking)
+    const { rows } = await pool.query(
+      `SELECT * FROM "Booking" WHERE id = $1 AND "designerId" = $2 LIMIT 1`,
+      [req.params.id, req.userId]
+    )
+    if (rows.length === 0) return res.status(404).json({ error: 'Booking not found' })
+    res.json(rows[0])
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch booking' })
   }
 }
+
 
 async function createBooking(req, res) {
   const {
@@ -56,32 +69,29 @@ async function createBooking(req, res) {
   }
 
   try {
-    const newBooking = await prisma.booking.create({
-      data: {
-        artisanId: req.userId,
-        client,
-        initials: toInitials(client),
-        clientColor: randomColour(),
-        clientPhone: clientPhone ?? '',
-        service,
-        occasion,
-        deliveryDate,
-        quantity: quantity ?? 1,
-        urgent: urgent ?? false,
-        status: 'pending',
-        receivedAt: new Date(),
-        price: Number(price),
-        depositPaid: false,
-        depositAmount: Number(depositAmount),
-        designNotes: designNotes ?? '',
-        fabrics: fabrics ?? [],
-        colors: colors ?? [],
-        inspirationRef: inspirationRef ?? '',
-        measurements: measurements ?? {},
-        consultation: consultation ?? { requested: false, status: 'none' },
-      },
-    })
-    res.status(201).json(newBooking)
+    const { rows } = await pool.query(
+      `INSERT INTO "Booking" (
+         id, "designerId", client, initials, "clientColor", "clientPhone",
+         service, occasion, "deliveryDate", quantity, urgent, status,
+         "receivedAt", price, "depositPaid", "depositAmount", "designNotes",
+         fabrics, colors, "inspirationRef", measurements, consultation
+       )
+       VALUES (
+         $1, $2, $3, $4, $5, $6,
+         $7, $8, $9, $10, $11, $12,
+         $13, $14, $15, $16, $17,
+         $18, $19, $20, $21, $22
+       )
+       RETURNING *`,
+      [
+        cuid(), req.userId, client, toInitials(client), randomColour(), clientPhone ?? '',
+        service, occasion, deliveryDate, quantity ?? 1, urgent ?? false, 'pending',
+        new Date(), Number(price), false, Number(depositAmount), designNotes ?? '',
+        fabrics ?? [], colors ?? [], inspirationRef ?? '',
+        JSON.stringify(measurements ?? {}), JSON.stringify(consultation ?? { requested: false, status: 'none' }),
+      ]
+    )
+    res.status(201).json(rows[0])
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to create booking' })
@@ -91,34 +101,66 @@ async function createBooking(req, res) {
 async function updateBooking(req, res) {
   const { id } = req.params
   try {
-    const existing = await prisma.booking.findFirst({ where: { id, artisanId: req.userId } })
+    const { rows: existingRows } = await pool.query(
+      `SELECT * FROM "Booking" WHERE id = $1 AND "designerId" = $2 LIMIT 1`,
+      [id, req.userId]
+    )
+    const existing = existingRows[0]
     if (!existing) return res.status(404).json({ error: 'Booking not found' })
-    const { status, depositPaid, consultation, designNotes, deliveryDate, price, depositAmount, urgent, quantity, fabrics, colors, inspirationRef, measurements } = req.body
-    if (status !== undefined && !VALID_STATUSES.includes(status)) return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` })
-    const updated = await prisma.booking.update({
-      where: { id },
-      data: {
-        ...(status !== undefined && { status }),
-        ...(depositPaid !== undefined && { depositPaid }),
-        ...(consultation !== undefined && { consultation: { ...(existing.consultation ?? {}), ...consultation } }),
-        ...(designNotes !== undefined && { designNotes }),
-        ...(deliveryDate !== undefined && { deliveryDate }),
-        ...(price !== undefined && { price: Number(price) }),
-        ...(depositAmount !== undefined && { depositAmount: Number(depositAmount) }),
-        ...(urgent !== undefined && { urgent }),
-        ...(quantity !== undefined && { quantity: Number(quantity) }),
-        ...(fabrics !== undefined && { fabrics }),
-        ...(colors !== undefined && { colors }),
-        ...(inspirationRef !== undefined && { inspirationRef }),
-        ...(measurements !== undefined && { measurements: { ...(existing.measurements ?? {}), ...measurements } }),
-      },
-    })
-    res.json(updated)
+
+    const {
+      status, depositPaid, consultation, designNotes, deliveryDate, price,
+      depositAmount, urgent, quantity, fabrics, colors, inspirationRef, measurements,
+    } = req.body
+
+    if (status !== undefined && !VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` })
+    }
+
+    const setClauses = []
+    const values = []
+    let i = 1
+
+    const add = (column, value) => {
+      setClauses.push(`${column} = $${i}`)
+      values.push(value)
+      i++
+    }
+
+    if (status !== undefined) add('status', status)
+    if (depositPaid !== undefined) add('"depositPaid"', depositPaid)
+    if (consultation !== undefined) {
+      const merged = { ...(existing.consultation ?? {}), ...consultation }
+      add('consultation', JSON.stringify(merged))
+    }
+    if (designNotes !== undefined) add('"designNotes"', designNotes)
+    if (deliveryDate !== undefined) add('"deliveryDate"', deliveryDate)
+    if (price !== undefined) add('price', Number(price))
+    if (depositAmount !== undefined) add('"depositAmount"', Number(depositAmount))
+    if (urgent !== undefined) add('urgent', urgent)
+    if (quantity !== undefined) add('quantity', Number(quantity))
+    if (fabrics !== undefined) add('fabrics', fabrics)
+    if (colors !== undefined) add('colors', colors)
+    if (inspirationRef !== undefined) add('"inspirationRef"', inspirationRef)
+    if (measurements !== undefined) {
+      const merged = { ...(existing.measurements ?? {}), ...measurements }
+      add('measurements', JSON.stringify(merged))
+    }
+
+    if (setClauses.length === 0) return res.json(existing)
+
+    values.push(id)
+    const { rows } = await pool.query(
+      `UPDATE "Booking" SET ${setClauses.join(', ')} WHERE id = $${i} RETURNING *`,
+      values
+    )
+    res.json(rows[0])
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to update booking' })
   }
 }
+
 
 async function replaceBooking(req, res) {
   const { id } = req.params
@@ -127,48 +169,68 @@ async function replaceBooking(req, res) {
     clientPhone, quantity, urgent, designNotes, fabrics, colors,
     inspirationRef, measurements, consultation,
   } = req.body
+
   if (!client || !service || !occasion || !deliveryDate || price == null || depositAmount == null) {
     return res.status(400).json({ error: 'client, service, occasion, deliveryDate, price, and depositAmount are required for a full update' })
   }
+
   try {
-    const existing = await prisma.booking.findFirst({ where: { id, artisanId: req.userId } })
+    const { rows: existingRows } = await pool.query(
+      `SELECT * FROM "Booking" WHERE id = $1 AND "designerId" = $2 LIMIT 1`,
+      [id, req.userId]
+    )
+    const existing = existingRows[0]
     if (!existing) return res.status(404).json({ error: 'Booking not found' })
-    const updated = await prisma.booking.update({
-      where: { id },
-      data: {
-        client,
-        initials: toInitials(client),
-        service,
-        occasion,
-        deliveryDate,
-        price: Number(price),
-        depositAmount: Number(depositAmount),
-        clientPhone: clientPhone ?? existing.clientPhone,
-        quantity: quantity != null ? Number(quantity) : existing.quantity,
-        urgent: urgent ?? existing.urgent,
-        designNotes: designNotes ?? existing.designNotes,
-        fabrics: fabrics ?? existing.fabrics,
-        colors: colors ?? existing.colors,
-        inspirationRef: inspirationRef ?? existing.inspirationRef,
-        measurements: measurements ?? existing.measurements,
-        consultation: consultation ?? existing.consultation,
-        clientColor: existing.clientColor,
-        receivedAt: existing.receivedAt,
-      },
-    })
-    res.json(updated)
+
+    const { rows } = await pool.query(
+      `UPDATE "Booking" SET
+         client = $1,
+         initials = $2,
+         service = $3,
+         occasion = $4,
+         "deliveryDate" = $5,
+         price = $6,
+         "depositAmount" = $7,
+         "clientPhone" = $8,
+         quantity = $9,
+         urgent = $10,
+         "designNotes" = $11,
+         fabrics = $12,
+         colors = $13,
+         "inspirationRef" = $14,
+         measurements = $15,
+         consultation = $16,
+         "clientColor" = $17,
+         "receivedAt" = $18
+       WHERE id = $19
+       RETURNING *`,
+      [
+        client, toInitials(client), service, occasion, deliveryDate,
+        Number(price), Number(depositAmount), clientPhone ?? existing.clientPhone,
+        quantity != null ? Number(quantity) : existing.quantity, urgent ?? existing.urgent,
+        designNotes ?? existing.designNotes, fabrics ?? existing.fabrics, colors ?? existing.colors,
+        inspirationRef ?? existing.inspirationRef,
+        JSON.stringify(measurements ?? existing.measurements),
+        JSON.stringify(consultation ?? existing.consultation),
+        existing.clientColor, existing.receivedAt, id,
+      ]
+    )
+    res.json(rows[0])
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to replace booking' })
   }
 }
 
+
 async function deleteBooking(req, res) {
   try {
-    const booking = await prisma.booking.findFirst({ where: { id: req.params.id, artisanId: req.userId } })
-    if (!booking) return res.status(404).json({ error: 'Booking not found' })
-    const deleted = await prisma.booking.delete({ where: { id: req.params.id } })
-    res.json({ message: `Booking ${deleted.id} deleted`, deleted })
+    const { rows } = await pool.query(
+      `DELETE FROM "Booking" WHERE id = $1 AND "designerId" = $2 RETURNING *`,
+      [req.params.id, req.userId]
+    )
+    if (rows.length === 0) return res.status(404).json({ error: 'Booking not found' })
+    res.json({ message: `Booking ${rows[0].id} deleted`, deleted: rows[0] })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to delete booking' })
