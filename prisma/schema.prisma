@@ -10,60 +10,53 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
 model ArtisanProfile {
-  id                String        @id @default(cuid())
-  artisanId         String        @unique
-  artisan           User          @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  id        String @id @default(cuid())
+  artisanId String @unique
+  artisan   User   @relation(fields: [artisanId], references: [id], onDelete: Cascade)
 
-  
-  fullName          String        @default("")
-  initials          String        @default("")
-  color             String        @default("#422a15")
-  avatar            String?
+  fullName String  @default("")
+  initials String  @default("")
+  color    String  @default("#422a15")
+  avatar   String?
 
-  
-  specialty         String        @default("")
-  location          String        @default("")
-  bio               String        @default("")
-  phone             String        @default("")
-  yearsOfExperience Int           @default(0)
-  styles            String[]      @default([])
+  specialty         String   @default("")
+  location          String   @default("")
+  bio               String   @default("")
+  phone             String   @default("")
+  yearsOfExperience Int      @default(0)
+  styles            String[] @default([])
 
-    available         Boolean       @default(true)
-  status            ArtisanStatus @default(Pending)
-  joined            String        @default("")
+  available Boolean       @default(true)
+  status    ArtisanStatus @default(Pending)
+  joined    String        @default("")
 
   // Relation
-  notes             ArtisanNote[]
-  messages          MessageConversation[]
-  pricing           ArtisanPricing?
+  notes    ArtisanNote[]
+  messages MessageConversation[]
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
-
 
 model ArtisanPricing {
-  id               String   @id @default(cuid())
-  artisanId        String   @unique
-  artisan          User     @relation(fields: [artisanId], references: [id], onDelete: Cascade)
-  currency         String   @default("NGN")
-  startingPrice    Int      @default(0)
-  hourlyRate       Int      @default(0)
-  consultationFee  Int      @default(0)
-  deliveryFee      Int      @default(0)
-  minimumBudget    Int      @default(0)
-  notes            String   @default("")
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  artisanId       String   @unique
+  artisan         User     @relation("UserArtisanPricing", fields: [artisanId], references: [id], onDelete: Cascade)
+  currency        String   @default("NGN")
+  startingPrice   Int      @default(0)
+  hourlyRate      Int      @default(0)
+  consultationFee Int      @default(0)
+  deliveryFee     Int      @default(0)
+  minimumBudget   Int      @default(0)
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
-
 
 model Booking {
   id             String   @id @default(cuid())
-  artisanId      String   @map("designerId") 
+  artisanId      String   @map("designerId")
   artisan        User     @relation("BookingArtisan", fields: [artisanId], references: [id], onDelete: Cascade)
   clientId       String?
   clientUser     User?    @relation("BookingClient", fields: [clientId], references: [id], onDelete: SetNull)
@@ -91,78 +84,73 @@ model Booking {
   updatedAt      DateTime @updatedAt
 }
 
-
 model Inquiry {
-  id         String  @id @default(cuid())
-  artisanId  String  @map("designerId")
-  artisan    User    @relation("InquiryArtisan", fields: [artisanId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  artisanId  String   @map("designerId")
+  artisan    User     @relation("InquiryArtisan", fields: [artisanId], references: [id], onDelete: Cascade)
   clientId   String?
-  clientUser User?   @relation("InquiryClient", fields: [clientId], references: [id], onDelete: SetNull)
+  clientUser User?    @relation("InquiryClient", fields: [clientId], references: [id], onDelete: SetNull)
   client     String
   service    String
   date       String
-  status     String  @default("New")
+  status     String   @default("New")
   message    String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
 
-
 model Availability {
-  id         String   @id @default(cuid())
-  date       String
-  artisanId  String   @map("designerId")
-  artisan    User     @relation(fields: [artisanId], references: [id], onDelete: Cascade)
-  status     String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  date      String
+  artisanId String   @map("designerId")
+  artisan   User     @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([artisanId, date])
 }
 
-
 model User {
-  id                String          @id @default(cuid())
+  id                String                @id @default(cuid())
   name              String
-  email             String          @unique
+  email             String                @unique
   password          String
-  role              Role            @default(artisan)
+  role              Role                  @default(artisan)
   artisanProfile    ArtisanProfile?
-  artisanPricing    ArtisanPricing?
-  bookingOwnerships Booking[]       @relation("BookingArtisan")
-  bookingClients    Booking[]       @relation("BookingClient")
-  inquiryOwnerships Inquiry[]       @relation("InquiryArtisan")
-  inquiryClients    Inquiry[]       @relation("InquiryClient")
+  artisanPricing    ArtisanPricing?       @relation("UserArtisanPricing")
+  bookingOwnerships Booking[]             @relation("BookingArtisan")
+  bookingClients    Booking[]             @relation("BookingClient")
+  inquiryOwnerships Inquiry[]             @relation("InquiryArtisan")
+  inquiryClients    Inquiry[]             @relation("InquiryClient")
   availability      Availability[]
   reviews           Review[]
   portfolioItems    PortfolioItem[]
   messageOwnerships MessageConversation[]
   clientProfile     ClientProfile?
   profileViews      ProfileView[]
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 }
-
 
 model Review {
-  id         String   @id @default(cuid())
-  artisanId  String   @map("designerId")
-  artisan    User     @relation(fields: [artisanId], references: [id], onDelete: Cascade)
-  client     String
-  initials   String
-  color      String
-  service    String
-  rating     Int
-  date       String
-  text       String
-  helpful    Int      @default(0)
-  replied    Boolean  @default(false)
-  reply      String?
-  bookingId  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  artisanId String   @map("designerId")
+  artisan   User     @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  client    String
+  initials  String
+  color     String
+  service   String
+  rating    Int
+  date      String
+  text      String
+  helpful   Int      @default(0)
+  replied   Boolean  @default(false)
+  reply     String?
+  bookingId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
-
 
 model PortfolioItem {
   id          String   @id @default(cuid())
@@ -176,7 +164,6 @@ model PortfolioItem {
   updatedAt   DateTime @updatedAt
 }
 
-
 model ArtisanNote {
   id               String         @id @default(cuid())
   artisanProfileId String
@@ -186,7 +173,6 @@ model ArtisanNote {
   content          String
   createdAt        String
 }
-
 
 model MessageConversation {
   id               Int            @id @default(autoincrement())
@@ -205,7 +191,6 @@ model MessageConversation {
   updatedAt        DateTime       @updatedAt
 }
 
-
 model Message {
   id             Int                 @id @default(autoincrement())
   conversationId Int
@@ -213,9 +198,8 @@ model Message {
   from           String
   text           String
   time           String
-  createdAt      DateTime @default(now())
+  createdAt      DateTime            @default(now())
 }
-
 
 model ClientProfile {
   id             Int      @id @default(autoincrement())
@@ -235,14 +219,12 @@ model ClientProfile {
   updatedAt      DateTime @updatedAt
 }
 
-
 model ProfileView {
-  id         String   @id @default(cuid())
-  artisanId  String   @map("designerId")
-  artisan    User     @relation(fields: [artisanId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  artisanId String   @map("designerId")
+  artisan   User     @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
-
 
 enum Role {
   client
