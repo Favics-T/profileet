@@ -8,7 +8,7 @@ async function getReviewStats(artisanUserIds) {
     `SELECT
        "designerId" AS "artisanId",
        COALESCE(AVG(rating), 0) AS avg_rating,
-       COUNT(id)                AS review_count
+       COUNT(id) AS review_count
      FROM "Review"
      WHERE "designerId" = ANY($1)
      GROUP BY "designerId"`,
@@ -24,6 +24,8 @@ async function getReviewStats(artisanUserIds) {
 }
 
 
+
+
 function mapArtisan(profile, statsMap) {
   const stats = statsMap?.get(profile.artisanId) ?? { rating: 0, reviews: 0 }
   return {
@@ -37,7 +39,7 @@ function mapArtisan(profile, statsMap) {
 
 async function listArtisans(req, res) {
   try {
-    const { location, specialty, available, q, minBudget, maxBudget } = req.query
+    const { location, city, state, country, specialty, available, q, minBudget, maxBudget } = req.query
     const conditions = []
     const values = []
     let i = 1
@@ -45,6 +47,24 @@ async function listArtisans(req, res) {
     if (location) {
       conditions.push(`LOWER("location") LIKE LOWER($${i})`)
       values.push(`%${location}%`)
+      i++
+    }
+
+    if (city) {
+      conditions.push(`LOWER("city") LIKE LOWER($${i})`)
+      values.push(`%${city}%`)
+      i++
+    }
+
+    if (state) {
+      conditions.push(`LOWER("state") LIKE LOWER($${i})`)
+      values.push(`%${state}%`)
+      i++
+    }
+
+    if (country) {
+      conditions.push(`LOWER("country") LIKE LOWER($${i})`)
+      values.push(`%${country}%`)
       i++
     }
 
@@ -125,6 +145,54 @@ async function listArtisans(req, res) {
 }
 
 
+async function listArtisanFilters(req, res) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT specialty, city, state, styles FROM "ArtisanProfile"`
+    )
+
+    const specialtyCounts = {}
+    const stateCounts = {}
+    const cityCounts = {}
+    const styleCounts = {}
+
+    for (const row of rows) {
+      if (row.specialty) {
+        specialtyCounts[row.specialty] = (specialtyCounts[row.specialty] || 0) + 1
+      }
+
+      if (row.state) {
+        stateCounts[row.state] = (stateCounts[row.state] || 0) + 1
+      }
+
+      if (row.city) {
+        const key = row.city + '|' + row.state
+        if (!cityCounts[key]) {
+          cityCounts[key] = { value: row.city, state: row.state, count: 0 }
+        }
+        cityCounts[key].count = cityCounts[key].count + 1
+      }
+
+      if (row.styles) {
+        for (const style of row.styles) {
+          styleCounts[style] = (styleCounts[style] || 0) + 1
+        }
+      }
+    }
+
+    const specialties = Object.keys(specialtyCounts).map((key) => ({ value: key, count: specialtyCounts[key] }))
+    const states = Object.keys(stateCounts).map((key) => ({ value: key, count: stateCounts[key] }))
+    const cities = Object.values(cityCounts)
+    const styles = Object.keys(styleCounts).map((key) => ({ value: key, count: styleCounts[key] }))
+
+    res.json({ states, cities, specialties, styles })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Failed to fetch artisan filters' })
+  }
+}
+
+
 async function getArtisan(req, res) {
   try {
     const { rows } = await pool.query(
@@ -191,6 +259,9 @@ async function updateArtisan(req, res) {
     const fieldMap = {
       specialty: 'specialty',
       location: 'location',
+      city: 'city',
+      state: 'state',
+      country: 'country',
       available: 'available',
       status: 'status',
       joined: 'joined',
@@ -283,4 +354,4 @@ async function addArtisanNote(req, res) {
   }
 }
 
-module.exports = { listArtisans, getArtisan, updateArtisan, addArtisanNote }
+module.exports = { listArtisans, listArtisanFilters, getArtisan, updateArtisan, addArtisanNote }

@@ -17,8 +17,8 @@ async function getArtisanProfile(req, res) {
     let profile = rows[0]
     if (!profile) {
       const { rows: createdRows } = await pool.query(
-        `INSERT INTO "ArtisanProfile" ("artisanId", "fullName")
-         VALUES ($1, '')
+        `INSERT INTO "ArtisanProfile" ("artisanId", "fullName", "updatedAt")
+         VALUES ($1, '', NOW())
          RETURNING *`,
         [req.userId]
       )
@@ -45,27 +45,36 @@ async function getArtisanProfile(req, res) {
 }
 
 async function updateArtisanProfile(req, res) {
-  const { fullName, specialty, location, bio, phone, yearsOfExperience, avatar, styles } = req.body
+  const { fullName, specialty, location, city, state, country, bio, phone, yearsOfExperience, avatar, styles, available } = req.body
   try {
     const { rows: existingRows } = await pool.query(
-      `SELECT id FROM "ArtisanProfile" WHERE "artisanId" = $1 LIMIT 1`,
+      `SELECT id, city, state FROM "ArtisanProfile" WHERE "artisanId" = $1 LIMIT 1`,
       [req.userId]
     )
     const existing = existingRows[0]
 
     if (!existing) {
+      
+      let locationToSave = location ?? ''
+      if (city && state) {
+        locationToSave = `${city}, ${state}`
+      }
+
       const { rows: createdRows } = await pool.query(
         `INSERT INTO "ArtisanProfile" (
-           "artisanId", "fullName", specialty, location, bio, phone,
-           "yearsOfExperience", avatar, styles
+           "artisanId", "fullName", specialty, location, city, state, country, bio, phone,
+           "yearsOfExperience", avatar, styles, "updatedAt"
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
          RETURNING *`,
         [
           req.userId,
           fullName ?? '',
           specialty ?? '',
-          location ?? '',
+          locationToSave,
+          city ?? '',
+          state ?? '',
+          country ?? 'Nigeria',
           bio ?? '',
           phone ?? '',
           yearsOfExperience ? Number(yearsOfExperience) : 0,
@@ -88,12 +97,29 @@ async function updateArtisanProfile(req, res) {
 
     if (fullName !== undefined) add('"fullName"', fullName)
     if (specialty !== undefined) add('specialty', specialty)
-    if (location !== undefined) add('location', location)
+    if (city !== undefined) add('city', city)
+    if (state !== undefined) add('state', state)
+    if (country !== undefined) add('country', country)
+
+    
+    if (city !== undefined || state !== undefined) {
+      const newCity = city !== undefined ? city : existing.city
+      const newState = state !== undefined ? state : existing.state
+      let newLocation = newCity
+      if (newState) {
+        newLocation = newCity + ', ' + newState
+      }
+      add('location', newLocation)
+    } else if (location !== undefined) {
+      add('location', location)
+    }
+
     if (bio !== undefined) add('bio', bio)
     if (phone !== undefined) add('phone', phone)
     if (yearsOfExperience !== undefined) add('"yearsOfExperience"', Number(yearsOfExperience))
     if (avatar !== undefined) add('avatar', avatar)
     if (styles !== undefined) add('styles', styles)
+    if (available !== undefined) add('available', available)
 
     if (updates.length === 0) {
       const { rows } = await pool.query(
@@ -181,9 +207,9 @@ async function updateArtisanPricing(req, res) {
       const { rows } = await pool.query(
         `INSERT INTO "ArtisanPricing" (
            "artisanId", currency, "startingPrice", "hourlyRate",
-           "consultationFee", "deliveryFee", "minimumBudget", notes
+           "consultationFee", "deliveryFee", "minimumBudget", notes, "updatedAt"
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
          RETURNING *`,
         [
           req.userId,

@@ -21,7 +21,8 @@ const artisanSchema = z.object({
   specialty: z.enum(['tailor', 'makeup artist', 'hairdresser', 'chef'], {
     error: 'specialty must be one of: tailor, makeup artist, hairdresser, chef',
   }),
-  location: z.string().trim().min(1, 'Location is required'),
+  city: z.string().trim().min(1, 'City is required'),
+  state: z.string().trim().min(1, 'State is required'),
 })
 
 // Client registration

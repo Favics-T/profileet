@@ -1,7 +1,8 @@
+const cuid = require('cuid')
 const { pool } = require('../config/db')
 const { paginate } = require('../middleware/paginate')
 
-const VALID_STATUSES = ['New', 'Replied', 'Booked']
+const VALID_STATUSES = ['New', 'Replied', 'Booked', 'Declined']
 
 async function listInquiries(req, res) {
   try {
@@ -80,4 +81,39 @@ async function updateInquiry(req, res) {
   }
 }
 
-module.exports = { listInquiries, getInquiry, updateInquiry }
+async function createInquiry(req, res) {
+  const { artisanId, service, message, date } = req.body
+  if (!artisanId || !service || !message) {
+    return res.status(400).json({ error: 'artisanId, service, and message are required' })
+  }
+
+  try {
+    const { rows: artisanRows } = await pool.query(
+      `SELECT id FROM "User" WHERE id = $1 AND role = 'artisan' LIMIT 1`,
+      [artisanId]
+    )
+    if (artisanRows.length === 0) return res.status(404).json({ error: 'Artisan not found' })
+
+    const { rows: clientRows } = await pool.query(
+      `SELECT name FROM "User" WHERE id = $1 LIMIT 1`,
+      [req.userId]
+    )
+    const clientName = clientRows[0]?.name ?? ''
+
+    const inquiryDate = date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+
+    const { rows } = await pool.query(
+      `INSERT INTO "Inquiry" (id, "designerId", "clientId", client, service, date, status, message, "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, 'New', $7, NOW())
+       RETURNING *`,
+      [cuid(), artisanId, req.userId, clientName, service, inquiryDate, message]
+    )
+
+    res.status(201).json(rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Failed to create inquiry' })
+  }
+}
+
+module.exports = { listInquiries, getInquiry, updateInquiry, createInquiry }

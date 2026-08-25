@@ -237,6 +237,9 @@ All error responses follow:
           email: { type: 'string', example: 'aisha@example.com' },
           specialty: { type: 'string', example: 'Bridal Wear' },
           location: { type: 'string', example: 'Lagos' },
+          city: { type: 'string', example: 'Ikeja' },
+          state: { type: 'string', example: 'Lagos' },
+          country: { type: 'string', example: 'Nigeria' },
           rating: { type: 'number', example: 4.8 },
           reviews: { type: 'integer', example: 32 },
           startingPrice: { type: 'integer', example: 25000 },
@@ -271,6 +274,9 @@ All error responses follow:
           email: { type: 'string', format: 'email', example: 'aisha@example.com' },
           specialty: { type: 'string', example: 'Bridal Wear' },
           location: { type: 'string', example: 'Lagos' },
+          city: { type: 'string', example: 'Ikeja' },
+          state: { type: 'string', example: 'Lagos' },
+          country: { type: 'string', example: 'Nigeria' },
           rating: { type: 'number', example: 4.9 },
           reviews: { type: 'integer', example: 33 },
           startingPrice: { type: 'integer', example: 25000 },
@@ -326,6 +332,9 @@ All error responses follow:
           fullName: { type: 'string', example: 'Aisha Bello' },
           specialty: { type: 'string', example: 'Bridal Wear' },
           location: { type: 'string', example: 'Lagos' },
+          city: { type: 'string', example: 'Ikeja' },
+          state: { type: 'string', example: 'Lagos' },
+          country: { type: 'string', example: 'Nigeria' },
           bio: { type: 'string', example: 'Luxury fashion artisan.' },
           phone: { type: 'string', example: '+2348012345678' },
           yearsOfExperience: { type: 'integer', example: 7 },
@@ -339,11 +348,14 @@ All error responses follow:
 
       ArtisanProfileUpdate: {
         type: 'object',
-        description: 'All fields optional. Only provided fields will be updated.',
+        description: 'All fields optional. Only provided fields will be updated. Setting city or state also refreshes the legacy `location` display string.',
         properties: {
           fullName: { type: 'string', example: 'Aisha Bello' },
           specialty: { type: 'string', example: 'Bridal Wear' },
           location: { type: 'string', example: 'Lagos' },
+          city: { type: 'string', example: 'Ikeja' },
+          state: { type: 'string', example: 'Lagos' },
+          country: { type: 'string', example: 'Nigeria' },
           bio: { type: 'string', example: 'Luxury fashion artisan.' },
           phone: { type: 'string', example: '+2348012345678' },
           yearsOfExperience: { type: 'integer', example: 7 },
@@ -658,6 +670,18 @@ All error responses follow:
         },
       },
 
+      InquiryCreate: {
+        type: 'object',
+        description: '**Client role only.**',
+        required: ['artisanId', 'service', 'message'],
+        properties: {
+          artisanId: { type: 'string', example: 'artisan_123' },
+          service: { type: 'string', example: 'Bridal gown & 2 asoebi' },
+          message: { type: 'string', example: 'Hi, I need a bridal gown for my wedding in August. Can we discuss pricing?' },
+          date: { type: 'string', example: '25 Aug 2026', description: 'Optional display date; defaults to today.' },
+        },
+      },
+
       //  Messages 
       Conversation: {
         type: 'object',
@@ -921,14 +945,70 @@ All error responses follow:
         operationId: 'listartisans',
         summary: 'List all artisans',
         description:
-          '**Public endpoint — no authentication required.** Returns all artisan records including their internal notes array.',
+          '**Public endpoint — no authentication required.** Returns all artisan records including their internal notes array. All query params below are optional and can be combined.',
         security: [],
+        parameters: [
+          { in: 'query', name: 'city', schema: { type: 'string' }, example: 'Ikeja', description: 'Partial, case-insensitive match on city.' },
+          { in: 'query', name: 'state', schema: { type: 'string' }, example: 'Lagos', description: 'Partial, case-insensitive match on state.' },
+          { in: 'query', name: 'country', schema: { type: 'string' }, example: 'Nigeria', description: 'Partial, case-insensitive match on country.' },
+          { in: 'query', name: 'location', schema: { type: 'string' }, example: 'Lagos', description: 'Partial match on the legacy free-text location string.' },
+          { in: 'query', name: 'specialty', schema: { type: 'string' }, example: 'tailor', description: 'Partial, case-insensitive match on specialty.' },
+          { in: 'query', name: 'available', schema: { type: 'boolean' }, example: true },
+          { in: 'query', name: 'q', schema: { type: 'string' }, example: 'bridal', description: 'Free-text search across name, specialty, location, and bio.' },
+          { in: 'query', name: 'minBudget', schema: { type: 'integer' }, example: 20000 },
+          { in: 'query', name: 'maxBudget', schema: { type: 'integer' }, example: 100000 },
+        ],
         responses: {
           200: {
             description: 'Array of artisan objects.',
             content: {
               'application/json': {
                 schema: { type: 'array', items: { $ref: '#/components/schemas/artisan' } },
+              },
+            },
+          },
+          500: { $ref: '#/components/responses/InternalError' },
+        },
+      },
+    },
+
+    '/artisans/filters': {
+      get: {
+        tags: ['artisans'],
+        operationId: 'listArtisanFilters',
+        summary: 'Get available filter values for artisan search',
+        description:
+          '**Public endpoint — no authentication required.** Returns the real city/state/specialty/style values currently in use, with counts, so a frontend can build filter dropdowns.',
+        security: [],
+        responses: {
+          200: {
+            description: 'Filter facets.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    states: {
+                      type: 'array',
+                      items: { type: 'object', properties: { value: { type: 'string' }, count: { type: 'integer' } } },
+                    },
+                    cities: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: { value: { type: 'string' }, state: { type: 'string' }, count: { type: 'integer' } },
+                      },
+                    },
+                    specialties: {
+                      type: 'array',
+                      items: { type: 'object', properties: { value: { type: 'string' }, count: { type: 'integer' } } },
+                    },
+                    styles: {
+                      type: 'array',
+                      items: { type: 'object', properties: { value: { type: 'string' }, count: { type: 'integer' } } },
+                    },
+                  },
+                },
               },
             },
           },
@@ -1090,7 +1170,8 @@ All error responses follow:
               example: {
                 fullName: 'Aisha Bello',
                 specialty: 'Bridal Wear',
-                location: 'Lagos',
+                city: 'Ikeja',
+                state: 'Lagos',
                 bio: 'Luxury fashion artisan.',
                 phone: '+2348012345678',
                 yearsOfExperience: 7,
@@ -1981,6 +2062,37 @@ All error responses follow:
           },
           401: { $ref: '#/components/responses/Unauthorized' },
           403: { $ref: '#/components/responses/Forbidden' },
+          500: { $ref: '#/components/responses/InternalError' },
+        },
+      },
+
+      post: {
+        tags: ['Inquiries'],
+        operationId: 'createInquiry',
+        summary: 'Send an inquiry to an artisan',
+        description: 'Lets a client contact an artisan before booking. **Requires client role.**',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/InquiryCreate' },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Inquiry created.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/Inquiry' } },
+            },
+          },
+          400: {
+            description: 'artisanId, service, or message missing.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
           500: { $ref: '#/components/responses/InternalError' },
         },
       },

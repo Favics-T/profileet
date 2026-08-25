@@ -15,7 +15,7 @@ async function createProfileView(req, res) {
     if (artisanRows.length === 0) return res.status(404).json({ error: 'Artisan not found' })
 
     await pool.query(
-      `INSERT INTO "ProfileView" (id, "artisanId")
+      `INSERT INTO "ProfileView" (id, "designerId")
        VALUES ($1, $2)`,
       [require('cuid')(), artisanId]
     )
@@ -34,24 +34,34 @@ async function getProfileViewStats(req, res) {
     startOfWeek.setDate(now.getDate() - now.getDay())
     startOfWeek.setHours(0, 0, 0, 0)
 
-    const [totalResult, thisWeekResult] = await Promise.all([
+    const startOfLastWeek = new Date(startOfWeek)
+    startOfLastWeek.setDate(startOfWeek.getDate() - 7)
+
+    const [totalResult, thisWeekResult, lastWeekResult] = await Promise.all([
       pool.query(
         `SELECT COUNT(*) AS total
          FROM "ProfileView"
-         WHERE "artisanId" = $1`,
+         WHERE "designerId" = $1`,
         [req.userId]
       ),
       pool.query(
         `SELECT COUNT(*) AS total
          FROM "ProfileView"
-         WHERE "artisanId" = $1 AND "createdAt" >= $2`,
+         WHERE "designerId" = $1 AND "createdAt" >= $2`,
         [req.userId, startOfWeek]
+      ),
+      pool.query(
+        `SELECT COUNT(*) AS total
+         FROM "ProfileView"
+         WHERE "designerId" = $1 AND "createdAt" >= $2 AND "createdAt" < $3`,
+        [req.userId, startOfLastWeek, startOfWeek]
       ),
     ])
 
     res.json({
       total: Number(totalResult.rows[0].total),
       thisWeek: Number(thisWeekResult.rows[0].total),
+      lastWeek: Number(lastWeekResult.rows[0].total),
     })
   } catch (err) {
     console.error(err)

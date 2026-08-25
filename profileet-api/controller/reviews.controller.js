@@ -175,9 +175,9 @@ async function createReview(req, res) {
 
     const { rows } = await pool.query(
       `INSERT INTO "Review" (
-         id, "designerId", client, initials, color, service, rating, date, text, helpful, replied, reply, "bookingId"
+         id, "designerId", client, initials, color, service, rating, date, text, helpful, replied, reply, "bookingId", "updatedAt"
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, false, NULL, $10)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, false, NULL, $10, NOW())
        RETURNING *`,
       [
         require('cuid')(),

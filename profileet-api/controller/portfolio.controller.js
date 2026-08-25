@@ -64,8 +64,8 @@ async function createPortfolioItem(req, res) {
     const created = []
     for (const item of items) {
       const { rows } = await pool.query(
-        `INSERT INTO "PortfolioItem" (id, "designerId", title, tag, description, "imageUrl")
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO "PortfolioItem" (id, "designerId", title, tag, description, "imageUrl", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())
          RETURNING *`,
         [cuid(), req.userId, item.title, item.tag || 'Other', item.description || '', item.imageUrl]
       )

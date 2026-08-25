@@ -20,7 +20,7 @@ function randomColor() {
 
 
 async function artisanSignup(req, res) {
-  const { name, email, password, specialty, location } = req.body
+  const { name, email, password, specialty, city, state } = req.body
   const client = await pool.connect()
 
   try {
@@ -38,8 +38,8 @@ async function artisanSignup(req, res) {
     await client.query('BEGIN')
 
     const { rows: userRows } = await client.query(
-      `INSERT INTO "User" (id, name, email, password, role)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO "User" (id, name, email, password, role, "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, NOW())
        RETURNING *`,
       [userId, name, email, hashedPassword, 'artisan']
     )
@@ -47,11 +47,12 @@ async function artisanSignup(req, res) {
 
     const profileId = cuid()
     const joined = new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+    const location = `${city}, ${state}`
 
     await client.query(
-      `INSERT INTO "ArtisanProfile" (id, "artisanId", "fullName", specialty, location, initials, color, joined)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [profileId, userId, name, specialty || '', location || '', toInitials(name), randomColor(), joined]
+      `INSERT INTO "ArtisanProfile" (id, "artisanId", "fullName", specialty, location, city, state, initials, color, joined, "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`,
+      [profileId, userId, name, specialty || '', location, city, state, toInitials(name), randomColor(), joined]
     )
 
     await client.query('COMMIT')
@@ -97,21 +98,20 @@ async function clientSignup(req, res) {
     await client.query('BEGIN')
 
     const { rows: userRows } = await client.query(
-      `INSERT INTO "User" (id, name, email, password, role)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO "User" (id, name, email, password, role, "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, NOW())
        RETURNING *`,
       [userId, name, email, hashedPassword, 'client']
     )
     const newUser = userRows[0]
 
-    const profileId = cuid()
     const firstName = name.split(' ')[0] || ''
     const lastName = name.split(' ').slice(1).join(' ') || ''
 
     await client.query(
-      `INSERT INTO "ClientProfile" (id, "clientId", "firstName", "lastName", email)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [profileId, userId, firstName, lastName, email]
+      `INSERT INTO "ClientProfile" ("clientId", "firstName", "lastName", email, "updatedAt")
+       VALUES ($1, $2, $3, $4, NOW())`,
+      [userId, firstName, lastName, email]
     )
 
     await client.query('COMMIT')

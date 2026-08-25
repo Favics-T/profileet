@@ -17,9 +17,9 @@ async function getClientProfile(req, res) {
     const { rows: createdRows } = await pool.query(
       `INSERT INTO "ClientProfile" (
          "clientId", "firstName", "lastName", email, phone, location, bio,
-         "bookingUpdates", "newMessages", promotions, reminders
+         "bookingUpdates", "newMessages", promotions, reminders, "updatedAt"
        )
-       VALUES ($1, '', '', '', '', '', '', true, true, false, true)
+       VALUES ($1, '', '', '', '', '', '', true, true, false, true, NOW())
        RETURNING *`,
       [req.userId]
     )
@@ -45,10 +45,10 @@ async function updateClientProfile(req, res) {
       const { rows: createdRows } = await pool.query(
         `INSERT INTO "ClientProfile" (
            "clientId", "firstName", "lastName", email, phone, location, bio,
-           "bookingUpdates", "newMessages", promotions, reminders
+           "bookingUpdates", "newMessages", promotions, reminders, "updatedAt"
          )
          VALUES (
-           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()
          )
          RETURNING *`,
         [

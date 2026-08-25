@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client')
+const bcrypt = require('bcrypt')
 const prisma = new PrismaClient()
 
 async function main() {
@@ -10,21 +11,28 @@ async function main() {
   await prisma.message.deleteMany()
   await prisma.messageConversation.deleteMany()
   await prisma.artisanNote.deleteMany()
+  await prisma.artisanPricing.deleteMany()
   await prisma.artisanProfile.deleteMany()
   await prisma.clientProfile.deleteMany()
   await prisma.portfolioItem.deleteMany()
+  await prisma.profileView.deleteMany()
   await prisma.review.deleteMany()
   await prisma.user.deleteMany()
+
+  const artisanPassword = await bcrypt.hash('seeded-artisan-password', 10)
+  const clientPassword = await bcrypt.hash('seeded-client-password', 10)
 
   const artisanUser = await prisma.user.upsert({
     where: { email: 'adaeze@example.com' },
     update: {
-      password: 'seeded-artisan-password',
+      name: 'Adaeze Nwosu',
+      password: artisanPassword,
       role: 'artisan',
     },
     create: {
+      name: 'Adaeze Nwosu',
       email: 'adaeze@example.com',
-      password: 'seeded-artisan-password',
+      password: artisanPassword,
       role: 'artisan',
     },
   })
@@ -32,16 +40,18 @@ async function main() {
   const clientUser = await prisma.user.upsert({
     where: { email: 'ada.obi@example.com' },
     update: {
-      password: 'seeded-client-password',
+      name: 'Ada Obi',
+      password: clientPassword,
       role: 'client',
     },
     create: {
+      name: 'Ada Obi',
       email: 'ada.obi@example.com',
-      password: 'seeded-client-password',
+      password: clientPassword,
       role: 'client',
     },
   })
-  
+
 
   const bookings = [
     {
@@ -176,6 +186,7 @@ async function main() {
     await prisma.booking.create({
       data: {
         ...booking,
+        receivedAt: new Date(booking.receivedAt),
         artisanId: artisanUser.id,
         clientId: null,
       },
@@ -374,20 +385,34 @@ async function main() {
     await prisma.user.upsert({
       where: { email: seed.email },
       update: { name: seed.name, role: 'artisan' },
-      create: { id: seed.id, name: seed.name, email: seed.email, password: 'seeded-artisan-password', role: 'artisan' },
+      create: { id: seed.id, name: seed.name, email: seed.email, password: artisanPassword, role: 'artisan' },
     })
   }
 
   await prisma.artisanProfile.createMany({
     data: [
-      { id: '1', artisanId: artisanUser.id, fullName: 'Adaeze Nwosu', specialty: 'Bridal & Ankara', location: 'Lagos, VI', bio: 'Bridal artisan with a focus on elegant, modern silhouettes.', phone: '08012345678', yearsOfExperience: 7, initials: 'AN', color: '#1a1a2e', styles: ['Bridal', 'Ankara', 'Corporate'], startingPrice: 45000, available: true, status: 'Pending', joined: 'Jun 10, 2025' },
-      { id: '2', artisanId: 'seed-artisan-2', fullName: 'Emeka Fashola', specialty: 'Streetwear & Casual', location: 'Lagos, Ikeja', bio: 'Tailor for casual and streetwear looks.', phone: '08023456789', yearsOfExperience: 5, initials: 'EF', color: '#1a1a2e', styles: ['Streetwear', 'Casual', 'Unisex'], startingPrice: 20000, available: true, status: 'Verified', joined: 'Jun 8, 2025' },
-      { id: '3', artisanId: 'seed-artisan-3', fullName: 'Fatima Aliyu', specialty: 'Kaftan & Aso-oke', location: 'Abuja, Wuse', bio: 'Traditional and kaftan specialist.', phone: '08034567890', yearsOfExperience: 3, initials: 'FA', color: '#1a1a2e', styles: ['Kaftan', 'Aso-oke', 'Traditional'], startingPrice: 35000, available: false, status: 'Active', joined: 'Jun 5, 2025' },
-      { id: '4', artisanId: 'seed-artisan-4', fullName: 'Chidi Okafor', specialty: 'Corporate & Suits', location: 'Port Harcourt', bio: 'Sharp corporate tailoring and suiting.', phone: '08045678901', yearsOfExperience: 9, initials: 'CO', color: '#1a1a2e', styles: ['Corporate', 'Suits', 'Agbada'], startingPrice: 30000, available: true, status: 'Active', joined: 'Jun 1, 2025' },
-      { id: '5', artisanId: 'seed-artisan-5', fullName: 'Ngozi Eze', specialty: 'Evening & Cocktail', location: 'Lagos, Lekki', bio: 'Eveningwear and cocktail pieces.', phone: '08056789012', yearsOfExperience: 4, initials: 'NE', color: '#1a1a2e', styles: ['Evening', 'Cocktail', 'Bridal'], startingPrice: 60000, available: true, status: 'Pending', joined: 'May 25, 2025' },
-      { id: '6', artisanId: 'seed-artisan-6', fullName: 'Bayo Adeleke', specialty: 'Agbada & Traditional', location: 'Ibadan', bio: 'Agbada and traditional wear specialist.', phone: '08067890123', yearsOfExperience: 10, initials: 'BA', color: '#1a1a2e', styles: ['Agbada', 'Traditional', 'Ankara'], startingPrice: 25000, available: false, status: 'Rejected', joined: 'May 20, 2025' },
+      { id: '1', artisanId: artisanUser.id, fullName: 'Adaeze Nwosu', specialty: 'Bridal & Ankara', location: 'Lagos, VI', city: 'Victoria Island', state: 'Lagos', bio: 'Bridal artisan with a focus on elegant, modern silhouettes.', phone: '08012345678', yearsOfExperience: 7, initials: 'AN', color: '#1a1a2e', styles: ['Bridal', 'Ankara', 'Corporate'], available: true, status: 'Pending', joined: 'Jun 10, 2025' },
+      { id: '2', artisanId: 'seed-artisan-2', fullName: 'Emeka Fashola', specialty: 'Streetwear & Casual', location: 'Lagos, Ikeja', city: 'Ikeja', state: 'Lagos', bio: 'Tailor for casual and streetwear looks.', phone: '08023456789', yearsOfExperience: 5, initials: 'EF', color: '#1a1a2e', styles: ['Streetwear', 'Casual', 'Unisex'], available: true, status: 'Verified', joined: 'Jun 8, 2025' },
+      { id: '3', artisanId: 'seed-artisan-3', fullName: 'Fatima Aliyu', specialty: 'Kaftan & Aso-oke', location: 'Abuja, Wuse', city: 'Wuse', state: 'Abuja', bio: 'Traditional and kaftan specialist.', phone: '08034567890', yearsOfExperience: 3, initials: 'FA', color: '#1a1a2e', styles: ['Kaftan', 'Aso-oke', 'Traditional'], available: false, status: 'Active', joined: 'Jun 5, 2025' },
+      { id: '4', artisanId: 'seed-artisan-4', fullName: 'Chidi Okafor', specialty: 'Corporate & Suits', location: 'Port Harcourt', city: 'Port Harcourt', state: 'Rivers', bio: 'Sharp corporate tailoring and suiting.', phone: '08045678901', yearsOfExperience: 9, initials: 'CO', color: '#1a1a2e', styles: ['Corporate', 'Suits', 'Agbada'], available: true, status: 'Active', joined: 'Jun 1, 2025' },
+      { id: '5', artisanId: 'seed-artisan-5', fullName: 'Ngozi Eze', specialty: 'Evening & Cocktail', location: 'Lagos, Lekki', city: 'Lekki', state: 'Lagos', bio: 'Eveningwear and cocktail pieces.', phone: '08056789012', yearsOfExperience: 4, initials: 'NE', color: '#1a1a2e', styles: ['Evening', 'Cocktail', 'Bridal'], available: true, status: 'Pending', joined: 'May 25, 2025' },
+      { id: '6', artisanId: 'seed-artisan-6', fullName: 'Bayo Adeleke', specialty: 'Agbada & Traditional', location: 'Ibadan', city: 'Ibadan', state: 'Oyo', bio: 'Agbada and traditional wear specialist.', phone: '08067890123', yearsOfExperience: 10, initials: 'BA', color: '#1a1a2e', styles: ['Agbada', 'Traditional', 'Ankara'], available: false, status: 'Rejected', joined: 'May 20, 2025' },
     ]
   })
+
+  const pricingByArtisan = [
+    { artisanId: artisanUser.id, startingPrice: 45000, hourlyRate: 8000, consultationFee: 5000, deliveryFee: 3000, minimumBudget: 30000 },
+    { artisanId: 'seed-artisan-2', startingPrice: 20000, hourlyRate: 4000, consultationFee: 2000, deliveryFee: 2000, minimumBudget: 15000 },
+    { artisanId: 'seed-artisan-3', startingPrice: 35000, hourlyRate: 6000, consultationFee: 3000, deliveryFee: 2500, minimumBudget: 25000 },
+    { artisanId: 'seed-artisan-4', startingPrice: 30000, hourlyRate: 5000, consultationFee: 3000, deliveryFee: 2500, minimumBudget: 20000 },
+    { artisanId: 'seed-artisan-5', startingPrice: 60000, hourlyRate: 10000, consultationFee: 6000, deliveryFee: 3500, minimumBudget: 40000 },
+    { artisanId: 'seed-artisan-6', startingPrice: 25000, hourlyRate: 4500, consultationFee: 2500, deliveryFee: 2000, minimumBudget: 18000 },
+  ]
+
+  await prisma.artisanPricing.createMany({
+    data: pricingByArtisan.map((p) => ({ ...p, currency: 'NGN' })),
+  })
+  console.log(`   ${pricingByArtisan.length} pricing rows seeded`)
 
   await prisma.artisanNote.create({
     data: { artisanProfileId: '2',
@@ -425,6 +450,51 @@ async function main() {
   await prisma.clientProfile.create({
     data: { clientId: clientUser.id, firstName: 'Ada', lastName: 'Obi', email: 'ada.obi@example.com', phone: '08012345678', location: 'Lagos, Nigeria', bio: 'I love beautifully made clothes and easy communication with artisans.' },
   })
+
+  const availability = [
+    { date: '2026-08-25', status: 'open' },
+    { date: '2026-08-26', status: 'open' },
+    { date: '2026-08-27', status: 'busy' },
+    { date: '2026-08-28', status: 'busy' },
+    { date: '2026-08-29', status: 'off' },
+    { date: '2026-08-31', status: 'open' },
+  ]
+
+  await prisma.availability.createMany({
+    data: availability.map((a) => ({ ...a, artisanId: artisanUser.id })),
+  })
+  console.log(`   ${availability.length} availability entries seeded`)
+
+  const portfolioItems = [
+    {
+      title: 'Ivory Bridal Gown',
+      tag: 'Bridal',
+      description: 'A-line bridal gown with floral lace overlay and cathedral train.',
+      imageUrl: 'https://images.example.com/portfolio/bridal-gown-1.jpg',
+    },
+    {
+      title: 'Royal Blue Agbada Set',
+      tag: 'Traditional',
+      description: '3-piece agbada set with gold embroidery on collar and cuffs.',
+      imageUrl: 'https://images.example.com/portfolio/agbada-set-1.jpg',
+    },
+    {
+      title: 'Emerald Evening Gown',
+      tag: 'Evening',
+      description: 'Mermaid-silhouette evening gown with open back and side slit.',
+      imageUrl: 'https://images.example.com/portfolio/evening-gown-1.jpg',
+    },
+  ]
+
+  await prisma.portfolioItem.createMany({
+    data: portfolioItems.map((p) => ({ ...p, artisanId: artisanUser.id })),
+  })
+  console.log(`   ${portfolioItems.length} portfolio items seeded`)
+
+  await prisma.profileView.createMany({
+    data: Array.from({ length: 8 }, () => ({ artisanId: artisanUser.id })),
+  })
+  console.log('   8 profile views seeded')
 
   console.log(' Seeding complete!')
 

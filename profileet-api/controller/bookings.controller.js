@@ -3,6 +3,7 @@ const { pool } = require('../config/db')
 const { paginate } = require('../middleware/paginate')
 
 const VALID_STATUSES = ['pending', 'accepted', 'in_progress', 'completed', 'cancelled']
+const UNAVAILABLE_DAY_STATUSES = ['busy', 'off']
 const COLOURS = ['#be185d', '#0ea5e9', '#7c3aed', '#16a34a', '#d97706', '#0891b2', '#dc2626', '#059669']
 
 const toInitials = (name = '') =>
@@ -71,18 +72,32 @@ async function createBooking(req, res) {
   }
 
   try {
+    const { rows: artisanRows } = await pool.query(
+      `SELECT id FROM "User" WHERE id = $1 AND role = 'artisan' LIMIT 1`,
+      [artisanId]
+    )
+    if (artisanRows.length === 0) return res.status(404).json({ error: 'Artisan not found' })
+
+    const { rows: availabilityRows } = await pool.query(
+      `SELECT status FROM "Availability" WHERE "designerId" = $1 AND date = $2 LIMIT 1`,
+      [artisanId, deliveryDate]
+    )
+    if (UNAVAILABLE_DAY_STATUSES.includes(availabilityRows[0]?.status)) {
+      return res.status(409).json({ error: 'Artisan is not available on this date' })
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO "Booking" (
          id, "designerId", "clientId", client, initials, "clientColor", "clientPhone",
          service, occasion, "deliveryDate", quantity, urgent, status,
          "receivedAt", price, "depositPaid", "depositAmount", "designNotes",
-         fabrics, colors, "inspirationRef", measurements, consultation
+         fabrics, colors, "inspirationRef", measurements, consultation, "updatedAt"
        )
        VALUES (
          $1, $2, $3, $4, $5, $6, $7,
          $8, $9, $10, $11, $12, $13,
          $14, $15, $16, $17, $18,
-         $19, $20, $21, $22, $23
+         $19, $20, $21, $22, $23, NOW()
        )
        RETURNING *`,
       [
@@ -137,6 +152,16 @@ async function updateBooking(req, res) {
 
     if (status !== undefined && !VALID_STATUSES.includes(status)) {
       return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` })
+    }
+
+    if (deliveryDate !== undefined) {
+      const { rows: availabilityRows } = await pool.query(
+        `SELECT status FROM "Availability" WHERE "designerId" = $1 AND date = $2 LIMIT 1`,
+        [existing.designerId, deliveryDate]
+      )
+      if (UNAVAILABLE_DAY_STATUSES.includes(availabilityRows[0]?.status)) {
+        return res.status(409).json({ error: 'Artisan is not available on this date' })
+      }
     }
 
     const setClauses = []
@@ -203,6 +228,20 @@ async function replaceBooking(req, res) {
     )
     const existing = existingRows[0]
     if (!existing) return res.status(404).json({ error: 'Booking not found' })
+
+    const { rows: artisanRows } = await pool.query(
+      `SELECT id FROM "User" WHERE id = $1 AND role = 'artisan' LIMIT 1`,
+      [artisanId]
+    )
+    if (artisanRows.length === 0) return res.status(404).json({ error: 'Artisan not found' })
+
+    const { rows: availabilityRows } = await pool.query(
+      `SELECT status FROM "Availability" WHERE "designerId" = $1 AND date = $2 LIMIT 1`,
+      [artisanId, deliveryDate]
+    )
+    if (UNAVAILABLE_DAY_STATUSES.includes(availabilityRows[0]?.status)) {
+      return res.status(409).json({ error: 'Artisan is not available on this date' })
+    }
 
     const { rows } = await pool.query(
       `UPDATE "Booking" SET

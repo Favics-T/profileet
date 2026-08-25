@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { requireAuth } = require('../middleware/auth')
+const { requireAuth, requireRole } = require('../middleware/auth')
 const {
   listBookings,
   getBooking,
@@ -13,9 +13,9 @@ const {
 router.use(requireAuth)
 router.get('/', listBookings)
 router.get('/:id', getBooking)
-router.post('/', createBooking)
+router.post('/', requireRole('client'), createBooking)
 router.patch('/:id', updateBooking)
-router.put('/:id', replaceBooking)
+router.put('/:id', requireRole('client'), replaceBooking)
 router.delete('/:id', deleteBooking)
 
 module.exports = router

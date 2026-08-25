@@ -74,10 +74,10 @@ async function upsertAvailability(req, res) {
 
     for (const entry of entries) {
       await client.query(
-        `INSERT INTO "Availability" (id, date, "designerId", status)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO "Availability" (id, date, "designerId", status, "updatedAt")
+         VALUES ($1, $2, $3, $4, NOW())
          ON CONFLICT ("designerId", date)
-         DO UPDATE SET status = EXCLUDED.status`,
+         DO UPDATE SET status = EXCLUDED.status, "updatedAt" = NOW()`,
         [cuid(), entry.date, req.userId, entry.status]
       )
     }
