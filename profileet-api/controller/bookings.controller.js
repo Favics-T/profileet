@@ -2,9 +2,27 @@ const cuid = require('cuid')
 const { pool } = require('../config/db')
 const { paginate } = require('../middleware/paginate')
 
-const VALID_STATUSES = ['pending', 'accepted', 'in_progress', 'completed', 'cancelled']
 const UNAVAILABLE_DAY_STATUSES = ['busy', 'off']
 const COLOURS = ['#be185d', '#0ea5e9', '#7c3aed', '#16a34a', '#d97706', '#0891b2', '#dc2626', '#059669']
+
+
+const STATUS_TRANSITIONS = {
+  pending: ['accepted', 'cancelled'],
+  accepted: ['in_progress', 'cancelled'],
+  in_progress: ['completed', 'cancelled'],
+  completed: [],
+  cancelled: [],
+}
+
+
+const TRANSITION_ROLE = {
+  'pending->accepted': 'artisan',
+  'pending->cancelled': 'any',
+  'accepted->in_progress': 'artisan',
+  'accepted->cancelled': 'any',
+  'in_progress->completed': 'artisan',
+  'in_progress->cancelled': 'artisan',
+}
 
 const toInitials = (name = '') =>
   name
@@ -17,22 +35,53 @@ const randomColour = () => COLOURS[Math.floor(Math.random() * COLOURS.length)]
 
 const bookingOwnerColumn = (role) => (role === 'artisan' ? '"designerId"' : '"clientId"')
 
+
+function checkStatusChange(currentStatus, nextStatus, role) {
+  const allowedNext = STATUS_TRANSITIONS[currentStatus] ?? []
+  if (!allowedNext.includes(nextStatus)) {
+    return {
+      code: 400,
+      error: `Cannot move from ${currentStatus} to ${nextStatus}. Valid transitions from ${currentStatus}: ${allowedNext.length ? allowedNext.join(', ') : 'none'}`,
+    }
+  }
+
+  const requiredRole = TRANSITION_ROLE[`${currentStatus}->${nextStatus}`]
+  if (requiredRole && requiredRole !== 'any' && role !== requiredRole) {
+    return { code: 403, error: `Only the ${requiredRole} can change status from ${currentStatus} to ${nextStatus}` }
+  }
+
+  return null
+}
+
 async function listBookings(req, res) {
   try {
     const { skip, take, page, limit } = paginate(req)
     const ownerColumn = bookingOwnerColumn(req.role)
+    const { status } = req.query
+
+    if (status !== undefined && !STATUS_TRANSITIONS[status]) {
+      return res.status(400).json({ error: `status must be one of: ${Object.keys(STATUS_TRANSITIONS).join(', ')}` })
+    }
+
+    const conditions = [`${ownerColumn} = $1`]
+    const values = [req.userId]
+    if (status) {
+      conditions.push(`status = $${values.length + 1}`)
+      values.push(status)
+    }
+    const whereClause = conditions.join(' AND ')
 
     const [{ rows: bookings }, countResult] = await Promise.all([
       pool.query(
         `SELECT * FROM "Booking"
-         WHERE ${ownerColumn} = $1
+         WHERE ${whereClause}
          ORDER BY "createdAt" DESC
-         OFFSET $2 LIMIT $3`,
-        [req.userId, skip, take]
+         OFFSET $${values.length + 1} LIMIT $${values.length + 2}`,
+        [...values, skip, take]
       ),
       pool.query(
-        `SELECT COUNT(*) FROM "Booking" WHERE ${ownerColumn} = $1`,
-        [req.userId]
+        `SELECT COUNT(*) FROM "Booking" WHERE ${whereClause}`,
+        values
       ),
     ])
 
@@ -67,26 +116,35 @@ async function createBooking(req, res) {
     inspirationRef, measurements, consultation,
   } = req.body
 
-  if (!artisanId || !client || !service || !occasion || !deliveryDate || price == null || depositAmount == null) {
-    return res.status(400).json({ error: 'artisanId, client, service, occasion, deliveryDate, price, and depositAmount are required' })
+  if (!artisanId || !client || !service || !occasion || !deliveryDate) {
+    return res.status(400).json({ error: 'artisanId, client, service, occasion, and deliveryDate are required' })
   }
 
+  const bookingPrice = price != null ? Number(price) : 0
+  const bookingDepositAmount = depositAmount != null ? Number(depositAmount) : 0
+
+  // 
+  const dbClient = await pool.connect()
   try {
-    const { rows: artisanRows } = await pool.query(
+    const { rows: artisanRows } = await dbClient.query(
       `SELECT id FROM "User" WHERE id = $1 AND role = 'artisan' LIMIT 1`,
       [artisanId]
     )
     if (artisanRows.length === 0) return res.status(404).json({ error: 'Artisan not found' })
 
-    const { rows: availabilityRows } = await pool.query(
-      `SELECT status FROM "Availability" WHERE "designerId" = $1 AND date = $2 LIMIT 1`,
+    await dbClient.query('BEGIN')
+
+    
+    const { rows: availabilityRows } = await dbClient.query(
+      `SELECT status FROM "Availability" WHERE "designerId" = $1 AND date = $2 FOR UPDATE`,
       [artisanId, deliveryDate]
     )
     if (UNAVAILABLE_DAY_STATUSES.includes(availabilityRows[0]?.status)) {
+      await dbClient.query('ROLLBACK')
       return res.status(409).json({ error: 'Artisan is not available on this date' })
     }
 
-    const { rows } = await pool.query(
+    const { rows } = await dbClient.query(
       `INSERT INTO "Booking" (
          id, "designerId", "clientId", client, initials, "clientColor", "clientPhone",
          service, occasion, "deliveryDate", quantity, urgent, status,
@@ -115,9 +173,9 @@ async function createBooking(req, res) {
         urgent ?? false,
         'pending',
         new Date(),
-        Number(price),
+        bookingPrice,
         false,
-        Number(depositAmount),
+        bookingDepositAmount,
         designNotes ?? '',
         fabrics ?? [],
         colors ?? [],
@@ -126,10 +184,15 @@ async function createBooking(req, res) {
         JSON.stringify(consultation ?? { requested: false, status: 'none' }),
       ]
     )
+
+    await dbClient.query('COMMIT')
     res.status(201).json(rows[0])
   } catch (err) {
+    await dbClient.query('ROLLBACK')
     console.error(err)
     res.status(500).json({ error: 'Failed to create booking' })
+  } finally {
+    dbClient.release()
   }
 }
 
@@ -146,12 +209,17 @@ async function updateBooking(req, res) {
     if (!existing) return res.status(404).json({ error: 'Booking not found' })
 
     const {
-      status, depositPaid, consultation, designNotes, deliveryDate, price,
+      status, consultation, designNotes, deliveryDate, price,
       depositAmount, urgent, quantity, fabrics, colors, inspirationRef, measurements,
     } = req.body
 
-    if (status !== undefined && !VALID_STATUSES.includes(status)) {
-      return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` })
+    if (status !== undefined) {
+      const statusError = checkStatusChange(existing.status, status, req.role)
+      if (statusError) return res.status(statusError.code).json({ error: statusError.error })
+    }
+
+    if ((price !== undefined || depositAmount !== undefined) && req.role !== 'artisan') {
+      return res.status(403).json({ error: 'Only the artisan can change price or depositAmount' })
     }
 
     if (deliveryDate !== undefined) {
@@ -175,7 +243,7 @@ async function updateBooking(req, res) {
     }
 
     if (status !== undefined) add('status', status)
-    if (depositPaid !== undefined) add('"depositPaid"', depositPaid)
+   
     if (consultation !== undefined) {
       const merged = { ...(existing.consultation ?? {}), ...consultation }
       add('consultation', JSON.stringify(merged))
@@ -229,6 +297,10 @@ async function replaceBooking(req, res) {
     const existing = existingRows[0]
     if (!existing) return res.status(404).json({ error: 'Booking not found' })
 
+    if (req.role !== 'artisan' && (Number(price) !== existing.price || Number(depositAmount) !== existing.depositAmount)) {
+      return res.status(403).json({ error: 'Only the artisan can change price or depositAmount' })
+    }
+
     const { rows: artisanRows } = await pool.query(
       `SELECT id FROM "User" WHERE id = $1 AND role = 'artisan' LIMIT 1`,
       [artisanId]
@@ -270,7 +342,7 @@ async function replaceBooking(req, res) {
        RETURNING *`,
       [
         artisanId,
-        req.userId,
+        existing.clientId,
         client,
         toInitials(client),
         existing.clientColor ?? randomColour(),
@@ -281,7 +353,7 @@ async function replaceBooking(req, res) {
         quantity ?? 1,
         urgent ?? false,
         Number(price),
-        false,
+        existing.depositPaid,
         Number(depositAmount),
         designNotes ?? '',
         fabrics ?? [],
@@ -303,15 +375,24 @@ async function replaceBooking(req, res) {
 async function deleteBooking(req, res) {
   try {
     const ownerColumn = bookingOwnerColumn(req.role)
-    const { rows } = await pool.query(
-      `DELETE FROM "Booking" WHERE id = $1 AND ${ownerColumn} = $2 RETURNING *`,
+    const { rows: existingRows } = await pool.query(
+      `SELECT * FROM "Booking" WHERE id = $1 AND ${ownerColumn} = $2 LIMIT 1`,
       [req.params.id, req.userId]
     )
-    if (rows.length === 0) return res.status(404).json({ error: 'Booking not found' })
-    res.json({ message: `Booking ${rows[0].id} deleted`, deleted: rows[0] })
+    const existing = existingRows[0]
+    if (!existing) return res.status(404).json({ error: 'Booking not found' })
+
+    const statusError = checkStatusChange(existing.status, 'cancelled', req.role)
+    if (statusError) return res.status(statusError.code).json({ error: statusError.error })
+
+    const { rows } = await pool.query(
+      `UPDATE "Booking" SET status = 'cancelled' WHERE id = $1 RETURNING *`,
+      [existing.id]
+    )
+    res.json({ message: `Booking ${rows[0].id} cancelled`, booking: rows[0] })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ error: 'Failed to delete booking' })
+    res.status(500).json({ error: 'Failed to cancel booking' })
   }
 }
 
