@@ -2,6 +2,8 @@ import { DayStatus } from '@/type/index'
 import { useCallback, useEffect, useState } from 'react'
 import { DAY_STATUS } from '@/constant/daysstatus'
 
+export { DAY_STATUS }
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
