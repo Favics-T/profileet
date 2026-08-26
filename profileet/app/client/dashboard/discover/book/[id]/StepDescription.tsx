@@ -112,22 +112,6 @@ export default function StepDescription({ form, onChange, onBack, onNext }: Step
             </div>
           )}
         </div>
-
-        <div className="flex items-start justify-between gap-4 rounded-xl border border-border-light bg-brand-light/50 px-4 py-3.5">
-          <div>
-            <p className="text-sm font-medium text-brand-dark">Request a consultation call before starting</p>
-            <p className="mt-0.5 text-xs text-brand-dark/50">The artisan will reach out to confirm details by phone or video before starting the work.</p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={form.wantsConsultation}
-            onClick={() => onChange({ wantsConsultation: !form.wantsConsultation })}
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${form.wantsConsultation ? 'bg-accent-gold' : 'bg-border-light'}`}
-          >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${form.wantsConsultation ? 'translate-x-5' : 'translate-x-0.5'}`} />
-          </button>
-        </div>
       </div>
 
       <div className="mt-8 flex justify-between">

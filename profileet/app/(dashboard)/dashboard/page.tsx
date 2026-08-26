@@ -177,13 +177,13 @@ export default function DashboardPage() {
         >
           {profile.available ? 'Available' : 'Unavailable'}
           <span
-            className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
               profile.available ? 'bg-emerald-500' : 'bg-border-light'
             }`}
           >
             <span
-              className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                profile.available ? 'translate-x-4.5' : 'translate-x-0.5'
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                profile.available ? 'translate-x-5' : 'translate-x-0.5'
               }`}
             />
           </span>

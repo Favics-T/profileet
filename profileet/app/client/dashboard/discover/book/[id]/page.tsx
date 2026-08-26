@@ -95,7 +95,6 @@ export default function BookingRequestPage() {
           urgent: form.urgent,
           designNotes: form.description,
           inspirationRef: form.photos.length > 0 ? JSON.stringify(form.photos) : '',
-          consultation: { requested: form.wantsConsultation, status: form.wantsConsultation ? 'pending' : 'none' },
         }),
       })
       const data = await res.json()

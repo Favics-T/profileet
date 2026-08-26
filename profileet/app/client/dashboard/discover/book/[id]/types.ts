@@ -16,7 +16,6 @@ export interface BookingFormState {
   urgent: boolean
   description: string
   photos: string[]
-  wantsConsultation: boolean
 }
 
 export const EMPTY_BOOKING_FORM: BookingFormState = {
@@ -27,5 +26,4 @@ export const EMPTY_BOOKING_FORM: BookingFormState = {
   urgent: false,
   description: '',
   photos: [],
-  wantsConsultation: false,
 }

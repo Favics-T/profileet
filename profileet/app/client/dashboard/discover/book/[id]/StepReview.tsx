@@ -87,11 +87,6 @@ export default function StepReview({
               ))}
             </div>
           )}
-          {form.wantsConsultation && (
-            <div className="mt-3">
-              <Badge variant="neutral">Consultation call requested</Badge>
-            </div>
-          )}
         </div>
 
         <div className="flex items-start gap-2.5 rounded-xl bg-brand-light px-4 py-3 text-xs text-brand-dark/60">
