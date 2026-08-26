@@ -48,8 +48,8 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
         headers: { ...authHeader() },
       })
       if (!res.ok) throw new Error(`Failed to fetch reviews: ${res.status}`)
-      const data: Review[] = await res.json()
-      setReviews(data)
+      const json: { data: Review[] } = await res.json()
+      setReviews(json.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load reviews')
     } finally {
@@ -58,7 +58,10 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    fetchReviews()
+    async function run() {
+      await fetchReviews()
+    }
+    run()
   }, [fetchReviews])
 
   

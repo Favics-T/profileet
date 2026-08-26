@@ -1,9 +1,168 @@
 'use client'
-import { useState } from 'react'
+
+import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { CheckCircle, ChevronRight, ArrowLeft, Calendar, Palette, Ruler, Video, Info, Sparkles, User, Clock } from 'lucide-react'
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-const DESIGNERS: Record<string,{id:string;name:string;specialty:string;location:string;startingPrice:number;color:string;initials:string}> = { '1':{id:'1',name:'Adaeze Nwosu',specialty:'Bridal & Ankara',location:'Lagos, VI',startingPrice:45000,color:'#1a1a2e',initials:'AN'}, '2':{id:'2',name:'Emeka Fashola',specialty:'Streetwear & Casual',location:'Lagos, Ikeja',startingPrice:20000,color:'#1a1a2e',initials:'EF'}, '3':{id:'3',name:'Fatima Aliyu',specialty:'Kaftan & Aso-oke',location:'Abuja, Wuse',startingPrice:35000,color:'#1a1a2e',initials:'FA'}, '4':{id:'4',name:'Chidi Okafor',specialty:'Corporate & Suits',location:'Port Harcourt',startingPrice:30000,color:'#1a1a2e',initials:'CO'}, '5':{id:'5',name:'Ngozi Eze',specialty:'Evening & Cocktail',location:'Lagos, Lekki',startingPrice:60000,color:'#1a1a2e',initials:'NE'}, '6':{id:'6',name:'Bayo Adeleke',specialty:'Agbada & Traditional',location:'Ibadan',startingPrice:25000,color:'#1a1a2e',initials:'BA'} }
-type Step='booking'|'design'|'measurements'|'consultation'|'confirm'
-export default function Page(){const {id}=useParams<{id:string}>();const r=useRouter();const d=DESIGNERS[id];const [step,setStep]=useState<Step>('booking');const [submitted,setSubmitted]=useState(false);const [form,setForm]=useState<any>({deliveryDate:'',occasion:'',quantity:1,urgentOrder:false,designNotes:'',fabrics:[],colors:[],inspirationRef:'',chest:'',waist:'',hips:'',shoulder:'',sleeveLength:'',dressLength:'',height:'',weight:'',wantConsultation:false,consultationDate:'',consultationTime:'',consultationNote:''}); if(!d)return <div className="p-10">Designer not found</div>; const u=(p:any)=>setForm((x:any)=>({...x,...p})); const submit=async()=>{await fetch(`${API_URL}/bookings`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client:'Ada Obi',clientPhone:'08012345678',service:d.specialty,occasion:form.occasion||'Other',deliveryDate:form.deliveryDate||new Date().toISOString().slice(0,10),quantity:form.quantity,urgent:form.urgentOrder,price:100000,depositAmount:50000,designNotes:form.designNotes,fabrics:form.fabrics,colors:form.colors,inspirationRef:form.inspirationRef,measurements:{chest:form.chest,waist:form.waist,hips:form.hips,shoulder:form.shoulder,sleeveLength:form.sleeveLength,dressLength:form.dressLength,height:form.height,weight:form.weight},consultation: form.wantConsultation ? {requested:true,date:form.consultationDate,time:form.consultationTime,note:form.consultationNote,status:'pending'} : {requested:false,status:'none'}})});setSubmitted(true)}; if(submitted)return <div className="max-w-lg mx-auto py-16 text-center"><CheckCircle className="w-10 h-10 mx-auto text-green-500"/><h2 className="text-2xl font-bold mt-3">Booking Submitted!</h2><button onClick={()=>r.push('/client/dashboard/bookings')} className="mt-6 px-5 py-3 rounded-xl text-white" style={{background:'#FF6500'}}>View My Bookings</button></div>; return <div className="max-w-2xl mx-auto"><Link href="/client/dashboard/discover" className="inline-flex items-center gap-1.5 text-sm text-gray-400 mb-5"><ArrowLeft className="w-4 h-4"/>Back to Discover</Link><div className="bg-white border rounded-2xl p-4 flex items-center gap-4 mb-6"><div className="w-12 h-12 rounded-xl flex items-center justify-center text-white" style={{background:d.color}}>{d.initials}</div><div className="flex-1"><p className="font-bold">{d.name}</p><p className="text-xs text-gray-500">{d.specialty} · {d.location}</p></div><p className="text-sm font-bold" style={{color:'#FF6500'}}>₦{d.startingPrice.toLocaleString()}</p></div><div className="bg-white border rounded-2xl p-6 space-y-5"><div><h3 className="font-bold flex items-center gap-2"><Calendar className="w-4 h-4" style={{color:'#FF6500'}}/>Booking Details</h3><input type="date" value={form.deliveryDate} onChange={e=>u({deliveryDate:e.target.value})} className="w-full border rounded-xl px-4 py-2.5 mt-3"/></div><div><h3 className="font-bold flex items-center gap-2"><Palette className="w-4 h-4" style={{color:'#FF6500'}}/>Custom Design</h3><textarea rows={4} value={form.designNotes} onChange={e=>u({designNotes:e.target.value})} className="w-full border rounded-xl px-4 py-3 mt-3" /></div><div><h3 className="font-bold flex items-center gap-2"><Ruler className="w-4 h-4" style={{color:'#FF6500'}}/>Measurements</h3><div className="grid grid-cols-2 gap-3 mt-3">{['chest','waist','hips','shoulder'].map(k=><input key={k} placeholder={k} value={form[k]} onChange={e=>u({[k]:e.target.value})} className="w-full border rounded-xl px-4 py-2.5" />)}</div></div><div><h3 className="font-bold flex items-center gap-2"><Video className="w-4 h-4" style={{color:'#FF6500'}}/>Consultation</h3><button onClick={()=>u({wantConsultation:!form.wantConsultation})} className="mt-3 px-4 py-2 rounded-xl border">{form.wantConsultation?'Enabled':'Disabled'}</button>{form.wantConsultation&&<div className="grid grid-cols-2 gap-3 mt-3"><input type="date" value={form.consultationDate} onChange={e=>u({consultationDate:e.target.value})} className="border rounded-xl px-4 py-2.5"/><input value={form.consultationTime} onChange={e=>u({consultationTime:e.target.value})} placeholder="10:00 AM" className="border rounded-xl px-4 py-2.5"/></div>}</div><button onClick={submit} className="w-full py-3 rounded-xl text-white font-semibold" style={{background:'linear-gradient(135deg,#FF6500,#ff8c3a)'}}>Submit Booking</button></div></div>}
+import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
+import { authHeader } from '@/lib/auth'
+import Card from '@/component/ui/Card'
+import Avatar from '@/component/ui/Avatar'
+import Stepper from './Stepper'
+import StepDetails from './StepDetails'
+import StepDescription from './StepDescription'
+import StepReview from './StepReview'
+import { EMPTY_BOOKING_FORM, type ArtisanLite, type BookingFormState } from './types'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+
+interface ClientProfile {
+  firstName: string
+  lastName: string
+  phone: string
+}
+
+export default function BookingRequestPage() {
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
+
+  const [artisan, setArtisan] = useState<ArtisanLite | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null)
+
+  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [form, setForm] = useState<BookingFormState>(EMPTY_BOOKING_FORM)
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchArtisan() {
+      setIsLoading(true)
+      setLoadError(null)
+      try {
+        const res = await fetch(`${API_URL}/artisans/${id}`)
+        if (!res.ok) throw new Error(res.status === 404 ? 'Artisan not found' : `Failed to load artisan (${res.status})`)
+        const data: ArtisanLite = await res.json()
+        if (cancelled) return
+        setArtisan(data)
+        setForm(f => ({ ...f, serviceType: f.serviceType || data.styles[0] || data.specialty || '' }))
+      } catch (err) {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load artisan')
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+    fetchArtisan()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  useEffect(() => {
+    fetch(`${API_URL}/client/profile`, { headers: { ...authHeader() } })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!data) return
+        setClientProfile({ firstName: data.firstName ?? '', lastName: data.lastName ?? '', phone: data.phone ?? '' })
+        setForm(f => (f.phone ? f : { ...f, phone: data.phone ?? '' }))
+      })
+      .catch(() => {})
+  }, [])
+
+  const update = (patch: Partial<BookingFormState>) => setForm(f => ({ ...f, ...patch }))
+
+  const submit = async () => {
+    if (!artisan) return
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      const clientName = clientProfile ? `${clientProfile.firstName} ${clientProfile.lastName}`.trim() : ''
+
+      const res = await fetch(`${API_URL}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({
+          artisanId: artisan.artisanId,
+          client: clientName || 'Client',
+          clientPhone: form.phone,
+          service: form.serviceType,
+          occasion: form.serviceType,
+          deliveryDate: form.preferredDate,
+          quantity: form.quantity,
+          urgent: form.urgent,
+          designNotes: form.description,
+          inspirationRef: form.photos.length > 0 ? JSON.stringify(form.photos) : '',
+          consultation: { requested: form.wantsConsultation, status: form.wantsConsultation ? 'pending' : 'none' },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to submit request')
+      router.push(`/client/dashboard/bookings/${data.id}`)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to submit request')
+      setIsSubmitting(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-brand-dark/50">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <p className="text-sm">Loading...</p>
+      </div>
+    )
+  }
+
+  if (loadError || !artisan) {
+    return (
+      <div className="mx-auto max-w-lg py-16 text-center">
+        <AlertCircle className="mx-auto h-6 w-6 text-error" />
+        <p className="mt-3 text-sm text-error">{loadError || 'Artisan not found'}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <Link
+        href={`/client/dashboard/discover/${artisan.id}`}
+        className="mb-5 inline-flex items-center gap-1.5 text-sm text-brand-dark/50 hover:text-brand-dark"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to profile
+      </Link>
+
+      <Stepper current={step} />
+
+      <Card variant="light" className="mb-5 flex items-center gap-3 !p-4">
+        <Avatar src={artisan.avatar} name={artisan.fullName || 'Artisan'} />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-brand-dark">{artisan.fullName || 'Unnamed artisan'}</p>
+          <p className="truncate text-xs text-brand-dark/60">
+            {artisan.specialty || 'Artisan'} &middot; {artisan.location}
+          </p>
+        </div>
+      </Card>
+
+      <Card variant="light">
+        {step === 1 && <StepDetails artisan={artisan} form={form} onChange={update} onNext={() => setStep(2)} />}
+        {step === 2 && (
+          <StepDescription form={form} onChange={update} onBack={() => setStep(1)} onNext={() => setStep(3)} />
+        )}
+        {step === 3 && (
+          <StepReview
+            form={form}
+            onBack={() => setStep(2)}
+            onEditDetails={() => setStep(1)}
+            onEditDescription={() => setStep(2)}
+            onSubmit={submit}
+            isSubmitting={isSubmitting}
+            error={submitError}
+          />
+        )}
+      </Card>
+    </div>
+  )
+}

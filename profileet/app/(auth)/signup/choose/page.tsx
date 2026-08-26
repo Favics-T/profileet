@@ -2,9 +2,8 @@ import Link from 'next/link'
 import { ArrowRight, Gem, Search, Wrench } from 'lucide-react'
 import Card from '@/component/ui/Card'
 
-//our artisan sign up page has not been built yet
-const CLIENT_SIGNUP_HREF = '#'
-const ARTISAN_SIGNUP_HREF = '#'
+const CLIENT_SIGNUP_HREF = '/signup/client'
+const ARTISAN_SIGNUP_HREF = '/signup/artisan'
 
 export default function ChooseRolePage() {
   return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { Inquiry, InquiryStatus } from '@/type/index'
 import { authHeader } from '@/lib/auth'
 
@@ -12,6 +12,7 @@ interface InquiryContextType {
   updateStatus: (id: string, status: InquiryStatus) => void
   isLoading: boolean
   error: string | null
+  refetch: () => Promise<void>
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
@@ -24,25 +25,29 @@ export function InquiryProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchInquiries() {
-      try {
-        setIsLoading(true)
-        setError(null)
-        const res = await fetch(`${API_URL}/inquiries`, {
-          headers: { ...authHeader() },
-        })
-        if (!res.ok) throw new Error(`Request failed (${res.status})`)
-        const data: Inquiry[] = await res.json()
-        setInquiries(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load inquiries')
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchInquiries = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const res = await fetch(`${API_URL}/inquiries`, {
+        headers: { ...authHeader() },
+      })
+      if (!res.ok) throw new Error(`Request failed (${res.status})`)
+      const json: { data: Inquiry[] } = await res.json()
+      setInquiries(json.data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load inquiries')
+    } finally {
+      setIsLoading(false)
     }
-    fetchInquiries()
   }, [])
+
+  useEffect(() => {
+    async function run() {
+      await fetchInquiries()
+    }
+    run()
+  }, [fetchInquiries])
 
   const filtered = filterStatus === 'All'
     ? inquiries
@@ -68,7 +73,7 @@ export function InquiryProvider({ children }: { children: ReactNode }) {
   }
   return (
     <InquiryContext.Provider
-      value={{ inquiries, filtered, filterStatus, setFilterStatus, updateStatus, isLoading, error }}
+      value={{ inquiries, filtered, filterStatus, setFilterStatus, updateStatus, isLoading, error, refetch: fetchInquiries }}
     >
       {children}
     </InquiryContext.Provider>

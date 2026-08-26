@@ -21,6 +21,7 @@ const defaultProfile: DesignerProfile = {
   phone: '',
   yearsOfExperience: 0,
   avatar: null,
+  available: true,
 }
 
 const TRACKED_FIELDS: { key: keyof DesignerProfile; label: string }[] = [
@@ -79,6 +80,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           phone:             data.phone             ?? '',
           yearsOfExperience: data.yearsOfExperience ?? 0,
           avatar:            data.avatar            ?? null,
+          available:         data.available         ?? true,
         }
 
         setProfile(loaded)
@@ -123,6 +125,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         phone:             saved.phone             ?? '',
         yearsOfExperience: saved.yearsOfExperience ?? 0,
         avatar:            saved.avatar            ?? null,
+        available:         saved.available         ?? true,
       })
     } catch (err) {
             setProfile(previous)

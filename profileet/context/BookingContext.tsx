@@ -29,8 +29,8 @@ export function BookingProvider({ children }: { children: ReactNode }) {
           headers: { ...authHeader() },
         })
         if (!res.ok) throw new Error(`Request failed (${res.status})`)
-        const data: BookingRequest[] = await res.json()
-        setBookings(data)
+        const json: { data: BookingRequest[] } = await res.json()
+        setBookings(json.data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load bookings')
       } finally {

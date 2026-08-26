@@ -1,4 +1,5 @@
 import { ReactNode } from 'react'
+import Image from 'next/image'
 import { Handshake } from 'lucide-react'
 
 interface SplitAuthLayoutProps {
@@ -10,11 +11,16 @@ interface SplitAuthLayoutProps {
   subtext?: string
 }
 
+const defaultIllustration = (
+  
+  <Image src="/auth-illustration.png" alt="" fill unoptimized className="object-contain" priority />
+)
+
 export default function SplitAuthLayout({
   children,
   logo,
   brandName = 'ArtisanLink',
-  illustration,
+  illustration = defaultIllustration,
   tagline = 'Connecting craft to community.',
   subtext = 'Discover trusted local professionals for your next high-quality service need.',
 }: SplitAuthLayoutProps) {
@@ -26,7 +32,11 @@ export default function SplitAuthLayout({
           <span className="text-lg font-semibold tracking-wide">{brandName}</span>
         </div>
 
-        {illustration && <div className="flex flex-1 items-center justify-center">{illustration}</div>}
+        {illustration && (
+          <div className="relative flex min-h-[220px] flex-1 items-center justify-center overflow-hidden">
+            {illustration}
+          </div>
+        )}
 
         <div className="max-w-md">
           <h2 className="mb-2 text-xl font-semibold">{tagline}</h2>

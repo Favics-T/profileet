@@ -6,9 +6,10 @@ export interface DesignerProfile {
   phone: string
   yearsOfExperience: number
   avatar: string | null
+  available: boolean
 }
 
-export type InquiryStatus = 'New' | 'Replied' | 'Booked'
+export type InquiryStatus = 'New' | 'Replied' | 'Booked' | 'Declined'
 
 export interface Inquiry {
   id: string
@@ -17,6 +18,7 @@ export interface Inquiry {
   date: string
   status: InquiryStatus
   message: string
+  createdAt: string
 }
 
 export type AdminRole = 'super_admin' | 'profile_manager' | 'support_agent' | 'auditor'

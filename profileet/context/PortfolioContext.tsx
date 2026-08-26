@@ -39,8 +39,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         headers: { ...authHeader() },
       })
       if (!res.ok) throw new Error(`Failed to fetch portfolio: ${res.status}`)
-      const data: PortfolioItem[] = await res.json()
-      setItems(data)
+      const json: { data: PortfolioItem[] } = await res.json()
+      setItems(json.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load portfolio')
     } finally {
@@ -49,7 +49,10 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    fetchItems()
+    async function run() {
+      await fetchItems()
+    }
+    run()
   }, [fetchItems])
 
   

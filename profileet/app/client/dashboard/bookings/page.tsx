@@ -1,29 +1,224 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CalendarCheck, Search, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
+import { AlertCircle, CalendarX } from 'lucide-react'
+import { authHeader } from '@/lib/auth'
+import Card from '@/component/ui/Card'
+import Badge from '@/component/ui/Badge'
+import Avatar from '@/component/ui/Avatar'
+import Button from '@/component/ui/Button'
 
-type Booking = { id: string; client: string; service: string; deliveryDate: string; price: number; status: string }
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+
+type BookingStatus = 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled'
+
+interface Booking {
+  id: string
+  designerId: string
+  service: string
+  occasion: string
+  deliveryDate: string
+  price: number
+  depositPaid: boolean
+  depositAmount: number
+  status: BookingStatus
+  receivedAt: string
+}
+
+interface ArtisanLookup {
+  artisanId: string
+  fullName: string
+  avatar: string | null
+}
+
+const STATUS_TABS: { label: string; value: BookingStatus | 'all' }[] = [
+  { label: 'All', value: 'all' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Accepted', value: 'accepted' },
+  { label: 'In Progress', value: 'in_progress' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'Cancelled', value: 'cancelled' },
+]
+
+const STATUS_BADGE: Record<BookingStatus, { variant: 'gold' | 'terracotta' | 'success' | 'neutral'; label: string }> = {
+  pending: { variant: 'gold', label: 'Pending' },
+  accepted: { variant: 'success', label: 'Accepted' },
+  in_progress: { variant: 'terracotta', label: 'In Progress' },
+  completed: { variant: 'success', label: 'Completed' },
+  cancelled: { variant: 'neutral', label: 'Cancelled' },
+}
+
+const ACTIONABLE_STATUSES: BookingStatus[] = ['pending', 'accepted', 'in_progress']
+
+function BookingCardSkeleton() {
+  return (
+    <Card variant="light" className="animate-pulse">
+      <div className="flex items-start gap-3">
+        <div className="h-10 w-10 shrink-0 rounded-full bg-border-light" />
+        <div className="flex-1 space-y-2">
+          <div className="h-3.5 w-1/3 rounded bg-border-light" />
+          <div className="h-3 w-1/2 rounded bg-border-light" />
+        </div>
+        <div className="h-5 w-16 rounded-full bg-border-light" />
+      </div>
+      <div className="mt-4 h-3 w-1/4 rounded bg-border-light" />
+    </Card>
+  )
+}
 
 export default function BookingsPage() {
+  const [statusFilter, setStatusFilter] = useState<BookingStatus | 'all'>('all')
   const [bookings, setBookings] = useState<Booking[]>([])
-  const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<string>('all')
+  const [artisans, setArtisans] = useState<Record<string, ArtisanLookup>>({})
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [requestId, setRequestId] = useState(0)
 
   useEffect(() => {
-    fetch(`${API_URL}/bookings`).then(r => r.json()).then(setBookings).catch(() => setBookings([]))
+    fetch(`${API_URL}/artisans`)
+      .then(res => (res.ok ? res.json() : []))
+      .then((data: ArtisanLookup[]) => {
+        const map: Record<string, ArtisanLookup> = {}
+        data.forEach(a => {
+          map[a.artisanId] = a
+        })
+        setArtisans(map)
+      })
+      .catch(() => {})
   }, [])
 
-  const filtered = bookings.filter((b) => (activeTab === 'all' || b.status === activeTab) && (b.client.toLowerCase().includes(search.toLowerCase()) || b.service.toLowerCase().includes(search.toLowerCase()) || b.id.toLowerCase().includes(search.toLowerCase())))
-  const statuses = ['all', 'pending', 'accepted', 'in_progress', 'completed', 'cancelled']
+  useEffect(() => {
+    let cancelled = false
+    async function fetchBookings() {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const params = new URLSearchParams()
+        if (statusFilter !== 'all') params.set('status', statusFilter)
+        const res = await fetch(`${API_URL}/bookings?${params.toString()}`, { headers: { ...authHeader() } })
+        if (!res.ok) throw new Error(`Failed to load bookings (${res.status})`)
+        const json: { data: Booking[] } = await res.json()
+        if (!cancelled) setBookings(json.data)
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load bookings')
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+    fetchBookings()
+    return () => {
+      cancelled = true
+    }
+  }, [statusFilter, requestId])
+
+  const activeTabLabel = STATUS_TABS.find(t => t.value === statusFilter)?.label.toLowerCase()
 
   return (
     <div>
-      <div className="mb-6"><h2 className="text-xl font-bold text-gray-800 mb-1">My Bookings</h2><p className="text-sm text-gray-500">Track all your booking requests and appointments</p></div>
-      <div className="relative mb-4"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bookings..." className="w-full border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none bg-white" /></div>
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-5 overflow-x-auto">{statuses.map((s) => <button key={s} onClick={() => setActiveTab(s)} className="flex-1 min-w-fit px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap" style={activeTab === s ? { background: '#fff', color: '#1a1a2e' } : { color: '#9ca3af' }}>{s}</button>)}</div>
-      {filtered.length === 0 ? <div className="text-center py-16 text-gray-400"><CalendarCheck className="w-8 h-8 mx-auto mb-3 opacity-30" /><p className="text-sm font-medium">No bookings found</p></div> : <div className="space-y-3">{filtered.map((b) => <div key={b.id} className="bg-white border border-gray-100 rounded-2xl p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-gray-800">{b.client}</p><p className="text-xs text-gray-500">{b.service}</p></div><span className="text-xs px-2.5 py-1 rounded-full bg-gray-100">{b.status}</span></div><div className="flex items-center gap-3 text-xs text-gray-400 mt-2"><span>{new Date(b.deliveryDate).toLocaleDateString()}</span><span>·</span><span>₦{b.price.toLocaleString()}</span></div><div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100"><span className="text-xs text-gray-400 font-mono">{b.id}</span><button className="ml-auto flex items-center gap-1 text-xs font-medium text-gray-500">View details <ChevronRight className="w-3 h-3" /></button></div></div>)}</div>}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-brand-dark">My Bookings</h1>
+          <p className="mt-0.5 text-sm text-brand-dark/50">Track all your service requests and appointments</p>
+        </div>
+        <Link href="/client/dashboard/discover">
+          <Button variant="primary">Book a Service</Button>
+        </Link>
+      </div>
+
+      <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-border-light bg-white p-1">
+        {STATUS_TABS.map(tab => (
+          <button
+            key={tab.value}
+            onClick={() => setStatusFilter(tab.value)}
+            className={`min-w-fit flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+              statusFilter === tab.value ? 'bg-brand-dark text-brand-light' : 'text-brand-dark/50 hover:text-brand-dark'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-error/30 bg-error/10 px-6 py-10 text-center">
+          <AlertCircle className="h-6 w-6 text-error" />
+          <p className="text-sm text-error">{error}</p>
+          <Button variant="outline" onClick={() => setRequestId(n => n + 1)}>
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {!error && isLoading && (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <BookingCardSkeleton key={i} />
+          ))}
+        </div>
+      )}
+
+      {!error && !isLoading && bookings.length === 0 && (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border-light bg-white px-6 py-16 text-center">
+          <CalendarX className="h-8 w-8 text-brand-dark/30" />
+          <p className="text-sm font-medium text-brand-dark">
+            {statusFilter === 'all' ? "You haven't booked a service yet." : `No ${activeTabLabel} bookings.`}
+          </p>
+          {statusFilter === 'all' && (
+            <Link href="/client/dashboard/discover">
+              <Button variant="ghost">Browse artisans &rarr;</Button>
+            </Link>
+          )}
+        </div>
+      )}
+
+      {!error && !isLoading && bookings.length > 0 && (
+        <div className="space-y-3">
+          {bookings.map(booking => {
+            const badge = STATUS_BADGE[booking.status]
+            const artisan = artisans[booking.designerId]
+            const isActionable = ACTIONABLE_STATUSES.includes(booking.status)
+
+            return (
+              <Card key={booking.id} variant="light">
+                <div className="flex items-start gap-3">
+                  <Avatar src={artisan?.avatar ?? null} name={artisan?.fullName || 'Artisan'} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-brand-dark">{artisan?.fullName || 'Artisan'}</p>
+                    <p className="truncate text-xs text-brand-dark/60">
+                      {booking.service} &middot; {booking.occasion}
+                    </p>
+                  </div>
+                  <Badge variant={badge.variant}>{badge.label}</Badge>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border-light pt-3">
+                  <div className="text-xs text-brand-dark/50">
+                    <span>
+                      {new Date(booking.deliveryDate).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                    <span className="mx-1.5">&middot;</span>
+                    {booking.price > 0 ? (
+                      <>
+                        <span className="font-semibold text-brand-dark">&#8358;{booking.price.toLocaleString()}</span>
+                        <span className={`ml-1.5 ${booking.depositPaid ? 'text-emerald-600' : 'text-accent-terracotta'}`}>
+                          {booking.depositPaid ? 'Deposit paid' : 'No deposit'}
+                        </span>
+                      </>
+                    ) : (
+                      <span>Pricing pending</span>
+                    )}
+                  </div>
+
+                  <Link href={`/client/dashboard/bookings/${booking.id}`}>
+                    <Button variant={isActionable ? 'primary' : 'outline'}>View Details</Button>
+                  </Link>
+                </div>
+              </Card>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
